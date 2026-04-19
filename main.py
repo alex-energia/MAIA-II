@@ -8,7 +8,7 @@ def home():
     global logs 
     if request.method == 'POST': 
         u_m = request.form.get('msg') 
-        logs.append((u_m, "MAIA_II_CORE: Iniciando secuencia de dise¤o...")) 
+        logs.append((u_m, "MAIA_II_CORE: Iniciando secuencia de ingenieria...")) 
     h = "<html><body style='background:#000; color:#0ff; font-family:monospace; padding:30px;'>" 
     h += "<h1 style='color:#fff; text-align:center; border-bottom:2px solid #0ff;'> [ M.A.I.A. II - NEXO DE INGENIERIA ]</h1>" 
     h += "<div style='display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:30px;'>" 
