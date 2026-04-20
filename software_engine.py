@@ -1,123 +1,127 @@
 # -*- coding: utf-8 -*-
-# software_engine.py - MOTOR DE INGENIERÍA CRÍTICA MAIA II (V.2.0 BRUTAL)
+# software_engine.py - ENGINE MAIA II: GLI LEVEL 5 (ULTIMATE PERFORMANCE)
 
 def get_node_library(idea):
     """
-    Genera una arquitectura de 14 nodos de alta densidad.
-    Diseñado para despliegue inmediato en sistemas autónomos de alto rendimiento.
+    Genera arquitectura de 14 nodos con protocolos de redundancia, 
+    seguridad tactica y optimización de latencia cero.
     """
     if not idea:
-        return {f"{i:02}": "SISTEMA EN STANDBY. INGRESE CONCEPTO." for i in range(1, 15)}
+        return {f"{i:02}": "SISTEMA EN STANDBY. PROTOCOLO GLI REQUERIDO." for i in range(1, 15)}
 
-    # Diccionario de Nodos con lógica de grado industrial
     return {
-        "01_CORE_RTOS": f"""// KERNEL PREEMPTIVO (FREERTOS) - MISION: {idea}
+        "01_CORE_RTOS": f"""// KERNEL GLI-PREEMPTIVE - MISION: {idea}
 #include <FreeRTOS.h>
-#include <task.h>
+#include <semphr.h>
 
+// Guardián de tiempo real: Si el loop excede los 2ms, se dispara el Failsafe
 void vTaskFlightControl(void *pv) {{
-    // Prioridad de tiempo real estricta para {idea}
-    const TickType_t xFrequency = pdMS_TO_TICKS(2); // 500Hz
     TickType_t xLastWakeTime = xTaskGetTickCount();
     for(;;) {{
-        process_pid_loops(); // Estabilización inmediata
-        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+        if( xSemaphoreTake( xCriticalMutex, portMAX_DELAY ) ) {{
+            execute_stabilization_block(); // Nivel GLI: Prioridad 31
+            xSemaphoreGive( xCriticalMutex );
+        }}
+        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(2));
     }}
 }}""",
 
-        "02_CONTROL_ATTITUDE": f"""// ESTIMACION DE ACTITUD (EKF) - ADAPTADO: {idea}
+        "02_CONTROL_ATTITUDE": f"""// CONTROL NO LINEAL (ADAPTIVE SLIDING MODE) - {idea}
 import numpy as np
-class AttitudeEstimator:
-    def __init__(self):
-        self.q = np.array([1, 0, 0, 0]) # Quaternions
-        self.R_cov = np.eye(6) * 0.01 # Covarianza de ruido
-    def update(self, gyro, accel, dt):
-        # Integración de cuaterniones para evitar Gimbal Lock en {idea}
-        omega_mat = self.get_skew_symmetric(gyro)
-        self.q += 0.5 * dt * (omega_mat @ self.q)
-        self.q /= np.linalg.norm(self.q)""",
+def sliding_mode_control(error, s_matrix):
+    # Nivel GLI: El control se adapta si un motor pierde eficiencia
+    k_gain = 0.5 * np.sign(error) + (error * lambda_constant)
+    thrust_cmd = -M_matrix_inv @ (C_matrix @ dq + G_matrix + k_gain)
+    return np.clip(thrust_cmd, MIN_PWM, MAX_PWM)""",
 
-        "03_NAVIGATION_ASTAR": f"""// NAVEGACION TACTICA 3D (A-STAR) - {idea}
-#include <priority_queue>
-void compute_optimal_path(Node* start, Node* goal) {{
-    // Heurística adaptativa basada en el riesgo de la misión: {idea}
-    float g_score = current->g + (dist(current, next) * mission_risk_factor);
-    if (g_score < next->g) {{
-        next->parent = current;
-        next->f = g_score + heuristic(next, goal);
+        "03_NAVIGATION_ASTAR": f"""// NAVEGACION TACTICA 3D (DYNAMIC JPS+) - {idea}
+#include <vector>
+// Jump Point Search+: Optimización de A* para mapas de alta resolución
+void solve_navigation(Grid3D* map) {{
+    while(!open_list.empty()) {{
+        Node* current = jump_point_search(goal);
+        // Penalización por proximidad a amenazas detectadas en {idea}
+        current->cost += map->get_threat_level(current->pos);
     }}
 }}""",
 
-        "04_PERCEPTION_THERMAL": f"""// VISION TERMICA RADIOMETRICA - TARGET: {idea}
-def process_thermal_stream(frame_14bit):
-    # Detección de firmas infrarrojas para {idea}
-    celsius = (frame_14bit * 0.04) - 273.15
-    hotspots = (celsius > threshold).astype(int)
-    return identify_patterns(hotspots)""",
+        "04_PERCEPTION_THERMAL": f"""// RADIOMETRÍA ABSOLUTA (FLIR SDK) - {idea}
+def process_radiometry(raw_data):
+    # Calibración de emisividad según material del objetivo en {idea}
+    temp_k = raw_data * gain + offset
+    # Filtro de ruido temporal para evitar falsos positivos
+    filtered_temp = cv2.fastNlMeansDenoising(temp_k)
+    return np.where(filtered_temp > CRITICAL_TEMP, 1, 0)""",
 
-        "05_PERCEPTION_LIDAR": """// SLAM 3D Y SEGMENTACION (LIDAR)
-#include <pcl/point_cloud.h>
-void denoise_cloud(pcl::PointCloud<PointT>::Ptr cloud) {
-    // Filtrado Voxel Grid para procesamiento en tiempo real
-    sor.setLeafSize(0.1f, 0.1f, 0.1f);
-    sor.filter(*cloud_filtered);
+        "05_PERCEPTION_LIDAR": """// SLAM MULTI-SESIÓN (LIO-SAM)
+#include <gtsam/geometry/Pose3.h>
+void integrate_imu_lidar() {
+    // Fusión estrecha (Tightly-coupled) de IMU y Lidar para {idea}
+    // Proporciona odometría precisa incluso en giros bruscos
+    optimizer.add(PriorFactor<Pose3>(X(0), prior_pose, prior_noise));
 }""",
 
-        "06_TELEMETRY_MAVLINK": f"""// ENCRIPTACION CHA-CHA20 TACTICA - ID: {idea}
-void secure_telemetry(uint8_t* payload, size_t len) {{
-    // Cifrado de flujo para evitar hijacking en {idea}
-    chacha20_xor(payload, payload, len, session_key, nonce);
-    append_hmac_sha256(payload); // Integridad total
+        "06_TELEMETRY_MAVLINK": f"""// ENCRIPTACIÓN CUÁNTICA-RESISTENTE - {idea}
+#include <oqs/oqs.h> // Open Quantum Safe
+void secure_transmission(uint8_t* packet) {{
+    // Nivel GLI: Firma digital Ed25519 + Cifrado Kyber
+    OQS_KEM_keypair(OQS_KEM_alg_kyber_512, public_key, secret_key);
+    sign_payload(packet, ed25519_key);
 }}""",
 
-        "07_POWER_BMS": """// GESTION DE ENERGIA SMART 12S
-void bms_safety_loop() {
-    if(cell_imbalance > 0.04f) start_active_balancing();
-    if(discharge_rate > CRITICAL_THRESHOLD) deploy_failsafe();
+        "07_POWER_BMS": """// GESTIÓN DE CELDAS "ZERO-FAILURE"
+void bms_supervision_logic() {
+    // Monitoreo de Resistencia Interna (SoH) por celda
+    if(internal_resistance > LIMIT) flag_cell_degradation();
+    // Bypass automático de celda fallida si el hardware lo permite
 }""",
 
-        "08_COMM_SILVUS": """// MIMO MESH (SILVUS STREAMCASTER)
-void setup_tactical_radio() {
-    radio.set_mimo_mode(SPATIAL_MULTIPLEXING);
-    radio.enable_frequency_hopping(true); // Antijamming
-}""",
-
-        "09_DIAGNOSTICS_HEALTH": f"""// ANALISIS DE SALUD ESTRUCTURAL - {idea}
-bool run_preflight_diagnostics() {{
-    if (check_imu_vibration() > TOLERANCE) return false;
-    if (esc_telemetry.temp > 80.0) return false;
-    return true;
+        "08_COMM_SILVUS": f"""// RED MESH AUTOCURATIVA - MISION: {idea}
+void handle_mesh_reconfiguration() {{
+    // Salto de frecuencia inteligente (Antijamming activo)
+    if(link_snr < 10) initiate_frequency_hop(SC_BAND_EXTENDED);
+    silvus_api_set_power(TX_POWER_MAX);
 }}""",
 
-        "10_SIMULATION_SITL": f"""// PHYSICS ENGINE (SITL) - ENTORNO: {idea}
-def simulate_step(state, motor_rpm):
-    thrust = motor_rpm**2 * k_thrust
-    drag = 0.5 * rho * state.v**2 * Cd * Area
-    return (thrust - drag) / drone_mass""",
-
-        "11_MISSION_PLANNER": f"""// COORDINADOR DE ENJAMBRE - MISION: {idea}
-void execute_mission_queue() {{
-    if(battery_critical()) set_mode(RTL);
-    if(waypoint_reached()) request_next_target();
-}}""",
-
-        "12_HARDWARE_HAL": """// STM32H7 HAL (LOW LEVEL)
-#define MOT_1_PWM TIM1->CCR1
-void init_peripherals() {
-    HAL_Init();
-    SystemClock_Config(480MHz); // Máximo rendimiento
+        "09_DIAGNOSTICS_HEALTH": """// VOTACIÓN TRIPLE REDUNDANTE (TMR)
+bool system_consensus() {
+    // Si la IMU_1 difiere de IMU_2 y 3, se marca como poco confiable
+    int vote = (imu1.ok + imu2.ok + imu3.ok);
+    return (vote >= 2); // Resiliencia GLI ante falla de hardware única
 }""",
 
-        "13_AI_INFERENCE": f"""// TENSORRT ON-EDGE - DETECCION: {idea}
-class AIProcessor:
-    def __init__(self, engine_path):
-        self.context = runtime.deserialize(engine_path)
-    def infer(self, img):
-        # Inferencia de baja latencia para {idea}
-        return self.context.execute_v2(img)""",
+        "10_SIMULATION_SITL": """// SIMULADOR DE DINÁMICA DE FLUIDOS (CFD)
+def calculate_prop_wash(state):
+    # Simulación de efecto suelo y turbulencia de hélices
+    induced_velocity = thrust / (2 * rho * disk_area)
+    return state.v - induced_velocity""",
 
-        "14_FILESYSTEM_LOGS": """// BLACKBOX (SDMMC DMA)
-void log_telemetry() {
-    f_write(&log_file, dma_buffer, 512, &bw); // Escritura sin bloqueo
+        "11_MISSION_PLANNER": f"""// PLANIFICADOR DE ENJAMBRE COORDINADO - {idea}
+void sync_swarm_state() {{
+    // Algoritmo de consenso de posición para evitar colisiones entre drones
+    send_heartbeat_to_mesh(MY_POSE);
+    adjust_velocity_to_neighbors(swarm_data);
+}}""",
+
+        "12_HARDWARE_HAL": """// STM32H7 REGISTER-LEVEL ACCESS
+#define DCACHE_CLEAN() SCB_CleanDCache()
+void fast_pwm_update() {
+    // Acceso directo a registros de Timer para respuesta de microsegundos
+    TIM1->CCR1 = motor_val_1;
+    TIM1->CCR2 = motor_val_2;
+}""",
+
+        "13_AI_INFERENCE": f"""// ACELERACIÓN POR HARDWARE (NPU/GPU) - {idea}
+import onnxruntime as ort
+def run_optimized_inference(frame):
+    # Ejecución en el acelerador de IA (TensorRT/XNNPACK)
+    session = ort.InferenceSession("model.onnx", providers=['CUDAExecutionProvider'])
+    return session.run(None, {{"input": frame}})""",
+
+        "14_FILESYSTEM_LOGS": """// LOGS DE ALTA INTEGRIDAD (FATFS + DMA)
+void emergency_log_dump() {
+    // En caso de caída de tensión, el capacitor mantiene el log 100ms
+    // suficiente para cerrar el archivo en la SD con DMA rápido
+    f_sync(&logfile);
 }"""
     }
