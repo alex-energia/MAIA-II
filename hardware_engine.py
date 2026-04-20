@@ -19,4 +19,4 @@ def get_hardware_specs(idea):
     }
 
 def get_hardware_integrity_hash():
-    return "GLI-V11-PROTECTED"
+    return "GLI-V11-STRIKE-FORCE"
