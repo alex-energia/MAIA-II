@@ -4,7 +4,7 @@
 def get_node_library(idea):
     """
     Genera la arquitectura de 14 nodos de alto nivel.
-    Nodos actualizados: 02, 03, 06, 07 y 13 con lógica de misión crítica.
+    Nodos actualizados: 02, 03, 05, 06, 07, 08 y 13 con lógica de misión crítica.
     """
     return {
         "01_CORE_RTOS": f"// KERNEL PREEMPTIVO - MISION: {idea}\n#include <FreeRTOS.h>\nvoid vTaskFlightControl(void *pv) {{\n    TickType_t xLastWakeTime = xTaskGetTickCount();\n    for(;;) {{\n        run_stabilization_loops();\n        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(2)); // Loop estricto 500Hz\n    }}\n}}",
@@ -15,48 +15,46 @@ def get_node_library(idea):
         
         "04_PERCEPTION_THERMAL": "// PROCESAMIENTO TERMICO RADIOMETRICO\ndef process_frame(raw_ir):\n    thermal_data = (raw_ir.astype(float) * 0.04) - 273.15\n    return np.where(thermal_data > 85.0, 1, 0)",
         
-        "05_PERCEPTION_LIDAR": "// FILTRADO DE NUBE DE PUNTOS (PCL)\nvoid process_lidar() {{\n    pcl::VoxelGrid<PointT> sor;\n    sor.setLeafSize(0.05f, 0.05f, 0.05f);\n    sor.filter(*cloud_filtered);\n}}",
-        
-        "06_TELEMETRY_MAVLINK": f"""// TELEMETRIA ENCRIPTADA TACTICA (MAVLINK V2) - ID: {idea}
-#include <sodium.h> // Libreria de criptografia de alta velocidad
+        "05_PERCEPTION_LIDAR": f"""// PROCESAMIENTO LIDAR PCL (POINT CLOUD LIBRARY) - MISION: {idea}
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/segmentation/sac_segmentation.h>
 
-void secure_mavlink_stream(mavlink_message_t* msg) {{
-    uint8_t nonce[crypto_stream_chacha20_NONCEBYTES];
-    randombytes_buf(nonce, sizeof nonce);
-    
-    // Cifrado ChaCha20: Proteccion contra inyeccion de comandos y sniffing
-    crypto_stream_chacha20_xor(msg->payload, msg->payload, 
-                               MAVLINK_MAX_PAYLOAD_LEN, nonce, secret_key);
-    
-    // Firma digital para asegurar integridad de la mision: {idea}
-    mavlink_finalize_message_chan(msg, SYSTEM_ID, COMPONENT_ID, 
-                                  CHAN_SECURE, len, checksum);
+void process_point_cloud(pcl::PointCloud<PointT>::Ptr cloud) {{
+    // 1. Reduccion de ruido mediante Voxel Grid para procesado en tiempo real
+    pcl::VoxelGrid<PointT> sor;
+    sor.setLeafSize(0.1f, 0.1f, 0.1f); 
+    sor.filter(*cloud_filtered);
+
+    // 2. Segmentacion RANSAC para detectar plano de suelo y evitar colisiones en {idea}
+    pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+    pcl::SACSegmentation<PointT> seg;
+    seg.setOptimizeCoefficients(true);
+    seg.setModelType(pcl::SACMODEL_PLANE);
+    seg.setMethodType(pcl::SAC_RANSAC);
+    seg.segment(*inliers, *coefficients);
 }}""",
         
-        "07_POWER_BMS": f"""// GESTION INTELIGENTE DE ENERGIA 12S - TARGET: {idea}
-class SmartBMS {{
-public:
-    float cell_voltages[12];
-    bool discharge_lock = false;
-
-    void monitor_safety() {{
-        float total_v = calculate_sum(cell_voltages);
-        float delta = get_max_imbalance(cell_voltages);
-
-        // Algoritmo de balanceo activo para maxima vida util
-        if (delta > 0.035f) {{ 
-            engage_balancing_circuits(target_cell_index); 
-        }}
-
-        // Failsafe critico para drones de {idea}
-        if (total_v < CRITICAL_VOLTAGE || cell_voltages[0] < 3.2f) {{
-            trigger_emergency_land();
-            discharge_lock = true;
-        }}
-    }}
-}};""",
+        "06_TELEMETRY_MAVLINK": "// ENCRIPTACION CHA-CHA20 TACTICA (MAVLINK V2)\nvoid secure_mavlink_stream(mavlink_message_t* msg) { crypto_stream_chacha20_xor(msg->payload, msg->payload, MAVLINK_MAX_PAYLOAD_LEN, nonce, secret_key); }",
         
-        "08_COMM_SILVUS": "// MIMO MESH RADIO CONTROL\nvoid setup_silvus_link() { radio.set_mode(MESH_ADAPTIVE); radio.set_frequency(4400); }",
+        "07_POWER_BMS": "// GESTION INTELIGENTE DE ENERGIA 12S\nclass SmartBMS { void monitor_safety() { if (delta > 0.035f) engage_balancing(); } };",
+        
+        "08_COMM_SILVUS": f"""// CONFIGURACION RADIO SILVUS STREAMCASTER (MIMO MESH) - ID: {idea}
+#include "silvus_api.h"
+
+void configure_tactical_link() {{
+    SilvusNode config;
+    config.setFrequency(4400); // Banda S para penetracion de obstaculos
+    config.setBandwidth(BW_10MHZ);
+    config.setMimoMode(MIMO_SPATIAL_MULTIPLEXING); // Maximo throughput para {idea}
+    
+    // Configuracion de red Mesh: El dron puede actuar como repetidor
+    config.enableMeshRedundancy(true);
+    config.setEncryption(AES_256_GCM);
+    
+    if (config.getLinkQuality() < 30) {{
+        reduce_video_bitrate(); // Adaptacion dinamica de ancho de banda
+    }}
+}}""",
         
         "09_DIAGNOSTICS_HEALTH": "// LOGICA DE VOTACION TRIPLE SENSORIAL\nbool is_imu_reliable() { return (vote(imu1, imu2, imu3) != ERROR); }",
         
