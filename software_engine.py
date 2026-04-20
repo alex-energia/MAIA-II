@@ -4,7 +4,7 @@
 def get_node_library(idea):
     """
     Genera la arquitectura de 14 nodos de alto nivel.
-    Inyecta algoritmos de navegación 3D y control de misión crítica.
+    Inyecta algoritmos de navegación 3D, control y AI de grado industrial.
     """
     return {
         "01_CORE_RTOS": f"// KERNEL PREEMPTIVO - MISION: {idea}\n#include <FreeRTOS.h>\nvoid vTaskFlightControl(void *pv) {{\n    TickType_t xLastWakeTime = xTaskGetTickCount();\n    for(;;) {{\n        run_stabilization_loops();\n        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(2)); // Loop estricto 500Hz\n    }}\n}}",
@@ -31,7 +31,28 @@ def get_node_library(idea):
         
         "12_HARDWARE_HAL": "// STM32H7 REGISTROS DE BAJO NIVEL\n#define MOTOR_1_TIM TIM1->CCR1\n#define IMU_SPI_INSTANCE SPI1\nvoid hal_init() {{ HAL_Init(); MX_DMA_Init(); MX_SPI1_Init(); }}",
         
-        "13_AI_INFERENCE": f"// TENSORRT ON-EDGE - DETECCION: {idea}\ndef run_ai_logic(frame):\n    # Inferencia de baja latencia para deteccion de objetivos\n    predictions = model.execute(frame)\n    return filter_by_mission_context(predictions, context='{idea}')",
+        "13_AI_INFERENCE": f"""// MOTOR DE INFERENCIA NVIDIA TENSORRT - TARGET: {idea}
+import tensorrt as trt
+import pycuda.driver as cuda
+
+class AIInferenceEngine:
+    def __init__(self, model_path):
+        self.logger = trt.Logger(trt.Logger.INFO)
+        self.runtime = trt.Runtime(self.logger)
+        # Carga dinamica del motor optimizado para la mision: {idea}
+        with open(f"models/{{model_path}}.engine", "rb") as f:
+            self.engine = self.runtime.deserialize_cuda_engine(f.read())
+        self.context = self.engine.create_execution_context()
+
+    def run_inference(self, frame):
+        # Transferencia de memoria Host-to-Device (CPU a GPU)
+        cuda.memcpy_htod(self.d_input, frame)
+        self.context.execute_v2(self.bindings)
+        # Transferencia Device-to-Host (GPU a CPU)
+        cuda.memcpy_dtoh(self.output, self.d_output)
+        
+        # Filtrado logico basado en {idea}
+        return self.post_process_by_context(self.output, mission="{idea}")""",
         
         "14_FILESYSTEM_LOGS": "// BLACKBOX LOGGER DMA\nvoid log_high_speed() {{\n    // Escritura circular en SD para analisis post-vuelo\n    f_write(&log_file, buffer, 512, &bw);\n}}"
     }
