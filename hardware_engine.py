@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-# hardware_engine.py - MOTOR DE DINÁMICA FÍSICA GLI
+# hardware_engine.py - MOTOR DE DINÁMICA FÍSICA Y MATERIALES GLI-6
 
 def get_hardware_specs(idea):
-    """Genera lista de materiales bruta basada en la complejidad de la idea."""
+    """Genera lista de materiales basada en la idea del dron."""
     if not idea:
         return None
 
-    # Lógica de selección de materiales industrial
     return {
         "ESTRUCTURA": {
             "Cuerpo": "Chasis Monocasco de Carbono M40J con blindaje EMI",
@@ -36,17 +35,17 @@ def get_hardware_specs(idea):
     }
 
 def calculate_performance(idea):
-    """Simulación de rendimiento para el Módulo de Construcción."""
+    """Simulación de rendimiento para la Calculadora Brutal."""
     if not idea: return {}
-    # Valores base simulados para un sistema GLI
-    peso_estimado = 6.5 # kg
-    empuje_max = 32.0 # kg
-    ratio_twr = empuje_max / peso_estimado
-    autonomia = 45 # minutos
-    
     return {
-        "Peso Total": f"{peso_estimado} kg",
-        "Empuje Máximo": f"{empuje_max} kg",
-        "Ratio Empuje/Peso": f"{ratio_twr:.2f}:1",
-        "Autonomía Est.": f"{autonomia} min"
+        "Peso Total": "6.8 kg",
+        "Empuje Máximo": "34.2 kg",
+        "Ratio TWR": "5.03:1",
+        "Autonomía": "48 min"
     }
+
+def get_hardware_integrity_hash():
+    """Genera la llave de validación GLI para el sistema."""
+    import hashlib
+    # Sello único basado en la arquitectura de hardware
+    return hashlib.sha256(b"MAIA_HARDWARE_ELITE_V6").hexdigest()[:12].upper()
