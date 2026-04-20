@@ -2,21 +2,15 @@
 def get_3d_model_data(idea):
     if not idea: return {}
     return {
-        "CONFIGURACIÓN_GEOMÉTRICA": {
-            "Tipo": "Quadcopter en X",
-            "Brazos": 4,
-            "Hélices": 4,
-            "Material_Base": "Carbono M40J",
-            "Color_Principal": "#222222"
+        "DISEÑO": "MAIA-II Stealth Recon",
+        "MATERIALES": {
+            "Chasis": "Polímero Reforzado con Carbono (CFRP)",
+            "Hélices": "Policarbonato de Alta Resistencia con Bordes de Ataque",
+            "Óptica": "Lentes de Germanio para Térmica"
         },
-        "ESTADO_OPERATIVO": {
-            "Modo": "Vuelo Estacionario",
-            "RPM_Hélices": 4500
-        },
-        "DATOS_TECNICOS_RENDER": {
-            "Shader": "PBR"
+        "ANIMACIÓN": {
+            "Frecuencia_Vibración": 0.005,
+            "Velocidad_Rotación": 0.5,
+            "Inclinación_Ataque": 15
         }
     }
-
-def get_3d_integrity_hash():
-    return "3D-PROTO-V2-FIXED"
