@@ -1,71 +1,52 @@
 # -*- coding: utf-8 -*-
-# hardware_engine.py - ARQUITECTURA DE HARDWARE GLI-V9 (8 CATEGORÍAS CRÍTICAS)
-
-def get_hardware_specs(idea):
-    """Genera el ecosistema físico completo de 8 capas para MAIA II."""
-    if not idea: return {}
-
-    return {
-        "01_NÚCLEO_ESTRUCTURAL": [
-            "Chasis Monocasco de Carbono M40J con refuerzo de Kevlar en puntos de estrés",
-            "Blindaje de Grafeno para protección contra pulsos electromagnéticos (EMP)",
-            "Sistema de disipación térmica por micro-canales integrados en el chasis",
-            "Sellado IP67 con válvulas de compensación de presión para gran altitud"
-        ],
-        "02_PROPULSIÓN_Y_DINÁMICA": [
-            "Motores GaN-Core 750KV con imanes de neodimio N52SH (Resistentes al calor)",
-            "Hélices de Paso Variable dinámico (VPP) para control de empuje inverso",
-            "ESCs de Nitruro de Galio con frecuencia de refresco de 128kHz",
-            "Rodamientos híbridos cerámicos (Baja fricción, alta durabilidad)"
-        ],
-        "03_ENERGÍA_DE_ESTADO_SÓLIDO": [
-            "Celdas de Batería de Estado Sólido (450 Wh/kg) - Inmunes a perforaciones",
-            "BMS (Battery Management System) con balanceo activo de 2A por celda",
-            "PDU (Power Distribution Unit) con aislamiento galvánico de alta frecuencia",
-            "Puerto de carga rápida de 10C (Carga al 80% en 10 minutos)"
-        ],
-        "04_PERCEPCIÓN_MULTIESPECTRAL": [
-            "Sensor Lidar Ouster OS2-128 (Nube de puntos de largo alcance - 240m)",
-            "Cámara Térmica Radiométrica FLIR Boson (640x512) para visión nocturna",
-            "Radar de Onda Milimétrica (77GHz) para detección de obstáculos en clima extremo",
-            "Cámaras Estéreo de 120fps para mapeo SLAM visual local"
-        ],
-        "05_AVIÓNICA_Y_BÚNKER_IA": [
-            "Computadora de Vuelo STM32H7 Dual-Core con triple redundancia",
-            "NPU (Neural Processing Unit) de 100 TOPS para ejecución de Nodos de IA local",
-            "Caja Negra encriptada con memoria de grado industrial (SLC NAND)",
-            "Módulo de Seguridad de Hardware (HSM) FIPS 140-2 Nivel 3"
-        ],
-        "06_COMUNICACIONES_RESILIENTES": [
-            "Radio Silvus StreamCaster 4200 (MIMO Mesh) - Enlace de datos robusto",
-            "Antenas de seguimiento automático con ganancia de 12dBi",
-            "Enlace Satelital de reserva (Starlink Mini) para alcance global",
-            "Salto de frecuencia dinámico (FHSS) anti-interferencias"
-        ],
-        "07_NAVEGACIÓN_INERCIAL_PRECISA": [
-            "Giroscopio de Fibra Óptica (FOG) para navegación sin magnetómetro",
-            "Altímetro Láser de precisión centimétrica (Rango de 0.1m a 50m)",
-            "GNSS de Triple Banda (L1, L2, L5) con corrección RTK",
-            "Sensor de Flujo Óptico de alta velocidad para interiores"
-        ],
-        "08_SISTEMAS_DE_MISIÓN_Y_SOCORRO": [
-            "Sistema de suelta rápida electromagnética (Payload Dropper)",
-            "Faros de búsqueda LED de 60,000 lúmenes con enfoque variable",
-            "Altavoz de largo alcance (125dB) para comunicación táctica",
-            "Balizas Estroboscópicas IR para identificación aliada (IFF)"
-        ]
-    }
+# hardware_engine.py - MOTOR DINÁMICO DE INGENIERÍA GLI-V10
 
 def calculate_performance(idea):
-    """Cálculos de rendimiento para el estándar GLI-V9."""
-    if not idea: return {}
+    """Calculadora interactiva: Ajusta la física según la idea."""
+    if not idea:
+        return {"Peso": "---", "Empuje": "---", "TWR": "---", "Vuelo": "---", "Carga": "---"}
+    
+    # Lógica interactiva básica
+    idea_str = idea.lower()
+    base_peso = 5.0
+    base_empuje = 50.0
+    base_vuelo = 60
+    
+    if "pesado" in idea_str or "carga" in idea_str:
+        base_peso += 3.5
+        base_empuje += 40.0
+        base_vuelo -= 20
+    elif "ligero" in idea_str or "carrera" in idea_str:
+        base_peso -= 2.0
+        base_empuje -= 10.0
+        base_vuelo -= 10
+    
+    twr = base_empuje / base_peso
+    
     return {
-        "Peso Total": "5.1 kg",
-        "Empuje Máx": "54.0 kg",
-        "Ratio TWR": "10.58:1",
-        "Autonomía": "68 min",
-        "Carga Útil": "12.5 kg"
+        "Peso": f"{base_peso:.1f} kg",
+        "Empuje": f"{base_empuje:.1f} kg",
+        "TWR": f"{twr:.2f}:1",
+        "Vuelo": f"{base_vuelo} min",
+        "Carga": f"{(base_empuje - base_peso * 2):.1f} kg"
     }
 
+def get_hardware_specs(idea):
+    """Genera materiales específicos según el propósito."""
+    if not idea: return {}
+    
+    # Base de datos de materiales brutal
+    specs = {
+        "01_ESTRUCTURA": ["Monocasco Carbono M40J", "Blindaje Grafeno", "Titanio Grado 5"],
+        "02_PROPULSIÓN": ["Motores GaN-Core 750KV", "Hélices Paso Variable", "ESC Nitruro Galio"],
+        "03_ENERGÍA": ["Estado Sólido 450Wh/kg", "BMS Balanceo Activo", "Carga 10C"],
+        "04_PERCEPCIÓN": ["Lidar Ouster OS2-128", "Térmica FLIR Boson", "Radar 77GHz"],
+        "05_AVIÓNICA": ["STM32H7 Triple Núcleo", "NPU 100 TOPS", "TPM 2.0 Encriptado"],
+        "06_COMUNICACIONES": ["Silvus MIMO Mesh", "Starlink Mini", "Módulo Anti-Jamming"],
+        "07_NAVEGACIÓN": ["FOG (Giro Fibra Óptica)", "RTK Triple Banda", "Láser Centimétrico"],
+        "08_MISIÓN": ["Payload Dropper Mag", "Foco 60K Lúmenes", "Megafonía 125dB"]
+    }
+    return specs
+
 def get_hardware_integrity_hash():
-    return "GLI-V9-8-LAYER-FULL-STRIKE"
+    return "GLI-V10-DYNAMIC-ACTIVE"
