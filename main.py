@@ -7,7 +7,7 @@ try:
     from strategic_engine import get_strategic_analysis
 except:
     def get_node_library(x): return {}
-    def get_hardware_specs(x): return {"Error": "No se cargó el motor de HW"}
+    def get_hardware_specs(x): return {}
     def get_strategic_analysis(x): return {}
 
 app = Flask(__name__)
@@ -23,89 +23,85 @@ def home():
     current_code = db.get(target, "// KERNEL MAIA II") if idea and target else "// AGUARDANDO COMANDO..."
 
     h = f"""
-    <html><head><title>MAIA II - V17 FINAL</title>
+    <html><head><title>MAIA II - KERNEL</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        body {{ background:#000202; color:#0ff; font-family:monospace; margin:0; overflow:hidden; font-size:12px; }}
-        .header {{ display:flex; align-items:center; gap:10px; padding:12px; background:rgba(0,30,30,0.95); border-bottom:2px solid #0ff; }}
-        .btn-ui {{ background:none; border:1px solid #0ff; color:#0ff; padding:7px 12px; cursor:pointer; font-weight:bold; font-size:10px; }}
+        body {{ background:#000; color:#0ff; font-family:monospace; margin:0; overflow:hidden; font-size:12px; }}
+        .header {{ display:flex; align-items:center; gap:10px; padding:10px; background:#001a1a; border-bottom:2px solid #0ff; }}
+        .btn-ui {{ background:none; border:1px solid #0ff; color:#0ff; padding:6px 12px; cursor:pointer; font-weight:bold; font-size:10px; }}
+        #voice-btn {{ background:#f00; color:#fff; border:none; }}
         
-        /* BOTÓN VOZ ESPECIAL */
-        #voice-btn {{ background:#ff0000; color:#fff; border:none; transition: 0.3s; }}
+        .grid-master {{ display:grid; grid-template-columns: 25% 45% 30%; gap:10px; height:88vh; padding:10px; }}
+        .panel {{ border:1px solid #0ff2; background:rgba(0,12,12,0.9); padding:10px; overflow-y:auto; border-radius:4px; }}
         
-        .grid-master {{ display:grid; grid-template-columns: 25% 40% 35%; gap:10px; height:85vh; padding:10px; box-sizing:border-box; }}
-        .panel {{ border:1px solid #0ff2; background:rgba(0,10,10,0.9); padding:10px; overflow-y:auto; border-radius:4px; }}
-        
-        /* EXPLICACIÓN HARDWARE */
-        .hw-list {{ display:flex; flex-direction:column; gap:8px; }}
-        .hw-item {{ border-left:2px solid #0f0; background:rgba(0,255,0,0.05); padding:8px; }}
-        .hw-title {{ color:#0f0; font-weight:bold; font-size:11px; text-transform:uppercase; }}
-        .hw-desc {{ color:#ccc; font-size:10px; margin-top:3px; }}
-
-        #proto-container {{ width:100%; height:100%; min-height:400px; background:#000; }}
-        .code-box {{ background:#000; color:#39ff14; padding:10px; font-size:10px; border:1px solid #f0f3; white-space:pre-wrap; overflow-y:auto; }}
-
-        #chat-container {{ position:fixed; bottom:10px; right:10px; width:250px; border:2px solid #0ff; background:#001a1a; z-index:1000; }}
-        #chat-header {{ background:#0ff; color:#000; padding:5px; font-weight:bold; cursor:pointer; }}
+        .hw-header {{ display:flex; justify-content:space-between; align-items:center; cursor:pointer; color:#0ff; border-bottom:1px solid #0ff3; padding-bottom:5px; }}
+        .hw-item {{ border-left:2px solid #0f0; background:rgba(0,255,0,0.03); padding:8px; margin-bottom:5px; }}
+        #proto-container {{ width:100%; height:100%; }}
+        .code-box {{ background:#000; color:#39ff14; padding:10px; font-size:10px; border-left:2px solid #f0f; white-space:pre-wrap; overflow-y:auto; height:150px; }}
     </style>
     </head><body>
     
     <div class='header'>
-        <b style="font-size:1.3em; color:#0ff;">MAIA II</b>
+        <b>MAIA II</b>
         <form method='post' style="display:flex; flex-grow:1; gap:10px; margin:0;">
-            <input name='drone_idea' style="background:#000; color:#0ff; border:1px solid #0ff; padding:8px; flex-grow:1;" placeholder='Misión...' value='{idea}'>
-            <button type='submit' style="background:#0ff; border:none; padding:8px 15px; font-weight:bold;">GENERAR</button>
+            <input name='drone_idea' style="background:#000; color:#0ff; border:1px solid #0ff; padding:8px; flex-grow:1;" value='{idea}'>
+            <button type='submit' style="background:#0ff; color:#000; font-weight:bold; border:none; padding:0 20px;">DESPLEGAR</button>
         </form>
         <button class='btn-ui' onclick="window.location.href='/'">LIMPIAR</button>
         <button class='btn-ui' onclick="alert('Memoria Sincronizada')">MEMORIA</button>
-        <button class='btn-ui' id="voice-btn" onclick="activateMaiaVoice()">VOZ MAIA II: OFF</button>
+        <button class='btn-ui' id="voice-btn" onclick="maiaVoice()">VOZ MAIA II: OFF</button>
     </div>
 
     <div class='grid-master'>
         <div class="panel">
-            <h4 style="color:#f0f; border-bottom:1px solid #f0f2;">INTELIGENCIA ESTRATÉGICA</h4>
-            {"".join([f"<div style='margin-bottom:10px;'><b style='color:#0ff;'>{k}</b><p style='color:#ccc; font-size:10px;'>{v}</p></div>" for k,v in strat_data.items()])}
+            <h4 style="color:#f0f;">ESTRATEGIA</h4>
+            {"".join([f"<div style='margin-bottom:10px;'><b style='color:#0ff;'>{k}</b><p style='color:#ccc;'>{v}</p></div>" for k,v in strat_data.items()])}
         </div>
 
-        <div class="panel" style="padding:0; overflow:hidden;">
+        <div class="panel" style="padding:0;">
             <div id="proto-container"></div>
         </div>
 
         <div class="panel">
-            <h4 style="color:#0ff; margin-top:0;">HARDWARE: 8 CATEGORÍAS TÉCNICAS</h4>
-            <div class="hw-list">
-                {"".join([f"<div class='hw-item'><div class='hw-title'>{k}</div><div class='hw-desc'>{v}</div></div>" for k,v in hw_data.items()]) if idea else "<p>Aguardando misión para detallar componentes...</p>"}
+            <div class="hw-header" onclick="toggleHW()">
+                <h4 style="margin:0;">HARDWARE (8 CATEGORÍAS)</h4>
+                <span id="hw-arrow">▼</span>
+            </div>
+            <div id="hw-section">
+                {"".join([f"<div class='hw-item'><b style='color:#0f0; font-size:10px;'>{k}</b><div style='color:#ccc; font-size:9px;'>{v}</div></div>" for k,v in hw_data.items()])}
             </div>
             
-            <h4 style="color:#f0f; margin-top:15px;">NODOS DE SOFTWARE</h4>
-            <div style="max-height:80px; overflow-y:auto; border-bottom:1px solid #f0f2; margin-bottom:5px;">
+            <h4 style="color:#f0f; margin-top:15px;">NODOS SOFTWARE</h4>
+            <div style="max-height:80px; overflow-y:auto; border-bottom:1px solid #f0f2; margin-bottom:10px;">
                 {"".join([f"<form method='post' style='margin:0;'><input type='hidden' name='drone_idea' value='{idea}'><input type='hidden' name='target_node' value='{n}'><button type='submit' style='background:none; color:#0f0; border:none; cursor:pointer; font-size:10px;'>▶ {n}</button></form>" for n in sorted(db.keys())])}
             </div>
             <div class="code-box">{current_code}</div>
         </div>
     </div>
 
-    <div id="chat-container">
-        <div id="chat-header" onclick="document.getElementById('chat-b').style.display='block'">CHAT MAIA II ▲</div>
-        <div id="chat-b" style="display:none; height:150px; padding:10px; overflow-y:auto; font-size:10px; color:#0f0;">
-            MAIA: Protocolo de chat listo...
-        </div>
-    </div>
-
     <script>
-        // LÓGICA DE VOZ: ROJO -> VERDE + SALUDO
-        function activateMaiaVoice() {{
+        function toggleHW() {{
+            const sec = document.getElementById('hw-section');
+            const arr = document.getElementById('hw-arrow');
+            if(sec.style.display === 'none') {{
+                sec.style.display = 'block';
+                arr.innerText = '▼';
+            }} else {{
+                sec.style.display = 'none';
+                arr.innerText = '▶';
+            }}
+        }}
+
+        function maiaVoice() {{
             const btn = document.getElementById('voice-btn');
-            btn.style.background = "#00ff00";
+            btn.style.background = "#0f0";
             btn.style.color = "#000";
             btn.innerText = "VOZ MAIA II: ON";
-            
-            const msg = new SpeechSynthesisUtterance("Sistemas de voz activos. Hola Alex, estoy lista para configurar tu dron.");
+            const msg = new SpeechSynthesisUtterance("Bienvenido Alex. Sistema MAIA II activo y blindado. Ingeniería lista para tu comando.");
             msg.lang = 'es-ES';
             window.speechSynthesis.speak(msg);
         }}
 
-        // RENDER DEL DRON (ASEGURADO)
         const container = document.getElementById('proto-container');
         if ('{idea}' !== '' && container) {{
             const scene = new THREE.Scene();
@@ -113,27 +109,22 @@ def home():
             const renderer = new THREE.WebGLRenderer({{antialias:true, alpha:true}});
             renderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(renderer.domElement);
-
             const droneGroup = new THREE.Group();
-            // Cuerpo
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.8), new THREE.MeshStandardMaterial({{color:0x222222}}));
+            const body = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), new THREE.MeshStandardMaterial({{color: 0x111111, metalness: 1, roughness: 0.2}}));
+            body.scale.set(1, 0.5, 1);
             droneGroup.add(body);
-            
-            // Hélices
-            [1,-1].forEach(x => [1,-1].forEach(z => {{
-                const p = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.02, 16, 100), new THREE.MeshBasicMaterial({{color:0x00ff00, transparent:true, opacity:0.5}}));
-                p.position.set(x*0.7, 0.1, z*0.7); p.rotation.x = Math.PI/2;
-                droneGroup.add(p);
-            }}));
-
+            const core = new THREE.Mesh(new THREE.SphereGeometry(0.15, 16, 16), new THREE.MeshBasicMaterial({{color: 0x00ffff}}));
+            droneGroup.add(core);
             scene.add(droneGroup);
-            scene.add(new THREE.PointLight(0x00ffff, 2, 100));
-            scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-            camera.position.set(2, 3, 5); camera.lookAt(0,0,0);
-
+            const light = new THREE.PointLight(0x00ffff, 2, 50);
+            light.position.set(2, 2, 2);
+            scene.add(light);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+            camera.position.set(0, 3, 6);
+            camera.lookAt(0,0,0);
             function animate() {{
                 requestAnimationFrame(animate);
-                droneGroup.rotation.y += 0.01;
+                droneGroup.rotation.y += 0.005;
                 renderer.render(scene, camera);
             }}
             animate();
