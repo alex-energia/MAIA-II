@@ -2,21 +2,14 @@
 def calculate_performance(idea):
     if not idea: return {"Peso": "---", "Empuje": "---", "TWR": "---", "Vuelo": "---"}
     es_pesado = "pesado" in idea.lower() or "carga" in idea.lower()
-    p, e, v = (8.5, 82.0, 45) if es_pesado else (4.8, 51.5, 65)
-    return {"Peso": f"{p}kg", "Empuje": f"{e}kg", "TWR": f"{round(e/p, 2)}:1", "Vuelo": f"{v}min"}
+    p, e, v = (12.4, 110.0, 40) if es_pesado else (3.2, 45.8, 55)
+    return {"Peso Total": f"{p}kg", "Empuje Máx": f"{e}kg", "Ratio TWR": f"{round(e/p, 2)}:1", "Autonomía": f"{v}min"}
 
 def get_hardware_specs(idea):
     if not idea: return {}
     return {
-        "ESTRUCTURA": ["Chasis Carbono M40J", "Blindaje Grafeno", "Titanio Grado 5"],
-        "PROPULSIÓN": ["Motores GaN-Core", "Hélices Paso Variable", "ESC Nitruro"],
-        "ENERGÍA": ["Estado Sólido 450Wh", "BMS Inteligente", "Carga 10C"],
-        "PERCEPCIÓN": ["Lidar OS2-128", "Térmica FLIR", "Radar 77GHz"],
-        "AVIÓNICA": ["STM32H7 Dual-Core", "NPU 100 TOPS", "TPM 2.0"],
-        "COMUNICACIÓN": ["Silvus MIMO Mesh", "Starlink Mini", "Anti-Jamming"],
-        "NAVEGACIÓN": ["FOG Fibra Óptica", "RTK Triple Banda", "Láser Precisión"],
-        "MISIÓN": ["Payload Dropper", "Foco 60K Lúmenes", "Megafonía 125dB"]
+        "ESTRUCTURA": ["Chasis Tubular M40J", "Nodos de Titanio", "Carcasa Kevlar"],
+        "PROPULSIÓN": ["Motores GaN 4800KV", "Hélices Carbono 12\"", "ESC 120A"],
+        "ENERGÍA": ["Lipo Solid-State", "BMS Dual Redundante", "Puerto Carga Rápida"],
+        "SISTEMAS": ["Lidar OS1", "IMU Redundante", "GPS RTK Triple"]
     }
-
-def get_hardware_integrity_hash():
-    return "GLI-V11-STRIKE-FORCE"
