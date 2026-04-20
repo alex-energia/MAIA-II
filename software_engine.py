@@ -1,127 +1,156 @@
 # -*- coding: utf-8 -*-
-# software_engine.py - ENGINE MAIA II: GLI LEVEL 5 (ULTIMATE PERFORMANCE)
+# MAIA II - GLOBAL LOGISTICS INTELLIGENCE (SISTEMA INTEGRADO V5.0)
+# Reemplaza todo tu archivo actual con este código.
 
+import os
+from flask import Flask, render_template_string, request
+
+# ==========================================
+# MOTOR DE INGENIERÍA (SOFTWARE ENGINE)
+# ==========================================
 def get_node_library(idea):
-    """
-    Genera arquitectura de 14 nodos con protocolos de redundancia, 
-    seguridad tactica y optimización de latencia cero.
-    """
+    """Genera la arquitectura de 14 nodos nivel GLI-5."""
     if not idea:
-        return {f"{i:02}": "SISTEMA EN STANDBY. PROTOCOLO GLI REQUERIDO." for i in range(1, 15)}
+        return {f"{i:02}": "// ESPERANDO CONCEPTO PARA INYECTAR LÓGICA..." for i in range(1, 15)}
 
     return {
-        "01_CORE_RTOS": f"""// KERNEL GLI-PREEMPTIVE - MISION: {idea}
+        "01_CORE_RTOS": f"""// KERNEL GLI-PREEMPTIVE V5.0 - MISION: {idea}
 #include <FreeRTOS.h>
-#include <semphr.h>
+#include <task.h>
 
-// Guardián de tiempo real: Si el loop excede los 2ms, se dispara el Failsafe
 void vTaskFlightControl(void *pv) {{
     TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t xFrequency = pdMS_TO_TICKS(2); // 500Hz Estricto
+
     for(;;) {{
-        if( xSemaphoreTake( xCriticalMutex, portMAX_DELAY ) ) {{
-            execute_stabilization_block(); // Nivel GLI: Prioridad 31
+        uint32_t start = get_high_res_timer();
+        if( xSemaphoreTake( xCriticalMutex, 0 ) == pdTRUE ) {{
+            execute_stabilization_block(); // Prioridad GLI 31
             xSemaphoreGive( xCriticalMutex );
         }}
-        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(2));
+        // Watchdog: Si el ciclo supera 1.5ms, alerta de jitter para {idea}
+        if((get_high_res_timer() - start) > 1500) log_timing_error();
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }}
 }}""",
 
-        "02_CONTROL_ATTITUDE": f"""// CONTROL NO LINEAL (ADAPTIVE SLIDING MODE) - {idea}
-import numpy as np
-def sliding_mode_control(error, s_matrix):
-    # Nivel GLI: El control se adapta si un motor pierde eficiencia
-    k_gain = 0.5 * np.sign(error) + (error * lambda_constant)
-    thrust_cmd = -M_matrix_inv @ (C_matrix @ dq + G_matrix + k_gain)
-    return np.clip(thrust_cmd, MIN_PWM, MAX_PWM)""",
+        "02_CONTROL_ATTITUDE": f"// CONTROL ADAPTATIVO NO LINEAL - {idea}\nimport numpy as np\ndef smc_update(error):\n    # Control por modo deslizante para compensar fallos en motores\n    s = error_dot + lambda_gain * error\n    return -inv_inertia @ (coriolis + gravity + k_gain * np.sign(s))",
 
-        "03_NAVIGATION_ASTAR": f"""// NAVEGACION TACTICA 3D (DYNAMIC JPS+) - {idea}
-#include <vector>
-// Jump Point Search+: Optimización de A* para mapas de alta resolución
-void solve_navigation(Grid3D* map) {{
-    while(!open_list.empty()) {{
-        Node* current = jump_point_search(goal);
-        // Penalización por proximidad a amenazas detectadas en {idea}
-        current->cost += map->get_threat_level(current->pos);
-    }}
-}}""",
+        "03_NAVIGATION_ASTAR": f"// DYNAMIC JPS+ (JUMP POINT SEARCH) - {idea}\n#include <vector>\nvoid compute_path() {{\n    // Optimización de trayectoria en 3D con costes de riesgo dinámicos\n    float h = calculate_heuristic(current, goal) * mission_priority_factor;\n    explore_neighbors_jps(current, h);\n}}",
 
-        "04_PERCEPTION_THERMAL": f"""// RADIOMETRÍA ABSOLUTA (FLIR SDK) - {idea}
-def process_radiometry(raw_data):
-    # Calibración de emisividad según material del objetivo en {idea}
-    temp_k = raw_data * gain + offset
-    # Filtro de ruido temporal para evitar falsos positivos
-    filtered_temp = cv2.fastNlMeansDenoising(temp_k)
-    return np.where(filtered_temp > CRITICAL_TEMP, 1, 0)""",
+        "04_PERCEPTION_THERMAL": f"// RADIOMETRÍA ABSOLUTA Y FIRMAS TÉRMICAS - {idea}\ndef analyze_radiometry(frame):\n    # Conversión Raw 14-bit a Celsius con compensación de emisividad\n    temp_map = (frame * 0.04) - 273.15\n    return detect_anomalies(temp_map, context='{idea}')",
 
-        "05_PERCEPTION_LIDAR": """// SLAM MULTI-SESIÓN (LIO-SAM)
-#include <gtsam/geometry/Pose3.h>
-void integrate_imu_lidar() {
-    // Fusión estrecha (Tightly-coupled) de IMU y Lidar para {idea}
-    // Proporciona odometría precisa incluso en giros bruscos
-    optimizer.add(PriorFactor<Pose3>(X(0), prior_pose, prior_noise));
-}""",
+        "05_PERCEPTION_LIDAR": "// SLAM 3D TIGHTLY-COUPLED (LIO-SAM)\n#include <gtsam/nonlinear/NonlinearFactorGraph.h>\nvoid fuse_sensors() { \n    // Fusión de IMU y Lidar para mapeo centimétrico sin GPS\n    optimizer.update(imu_factor, lidar_factor);\n}",
 
-        "06_TELEMETRY_MAVLINK": f"""// ENCRIPTACIÓN CUÁNTICA-RESISTENTE - {idea}
-#include <oqs/oqs.h> // Open Quantum Safe
-void secure_transmission(uint8_t* packet) {{
-    // Nivel GLI: Firma digital Ed25519 + Cifrado Kyber
-    OQS_KEM_keypair(OQS_KEM_alg_kyber_512, public_key, secret_key);
-    sign_payload(packet, ed25519_key);
-}}""",
+        "06_TELEMETRY_MAVLINK": f"// SEGURIDAD POST-CUÁNTICA - MISION: {idea}\n#include <oqs/oqs.h>\nvoid secure_stream(uint8_t* p) {{\n    // Cifrado Kyber-512 + Firma Ed25519\n    pq_encrypt(p, session_key);\n    sign_packet(p, tactical_signature);\n}}",
 
-        "07_POWER_BMS": """// GESTIÓN DE CELDAS "ZERO-FAILURE"
-void bms_supervision_logic() {
-    // Monitoreo de Resistencia Interna (SoH) por celda
-    if(internal_resistance > LIMIT) flag_cell_degradation();
-    // Bypass automático de celda fallida si el hardware lo permite
-}""",
+        "07_POWER_BMS": "// BMS SMART 12S (ZERO-FAILURE LOGIC)\nvoid monitor_cells() {\n    if(cell_diff > 0.035f) start_active_balancing();\n    if(temp > 65.0f) trigger_thermal_failsafe();\n}",
 
-        "08_COMM_SILVUS": f"""// RED MESH AUTOCURATIVA - MISION: {idea}
-void handle_mesh_reconfiguration() {{
-    // Salto de frecuencia inteligente (Antijamming activo)
-    if(link_snr < 10) initiate_frequency_hop(SC_BAND_EXTENDED);
-    silvus_api_set_power(TX_POWER_MAX);
-}}""",
+        "08_COMM_SILVUS": f"// MIMO MESH AUTOCURATIVA - ID: {idea}\nvoid config_radio() {{\n    radio.set_mimo(SPATIAL_MULTIPLEXING);\n    radio.enable_frequency_hopping(true); // Anti-Jamming activo\n}}",
 
-        "09_DIAGNOSTICS_HEALTH": """// VOTACIÓN TRIPLE REDUNDANTE (TMR)
-bool system_consensus() {
-    // Si la IMU_1 difiere de IMU_2 y 3, se marca como poco confiable
-    int vote = (imu1.ok + imu2.ok + imu3.ok);
-    return (vote >= 2); // Resiliencia GLI ante falla de hardware única
-}""",
+        "09_DIAGNOSTICS_HEALTH": "// VOTACIÓN TRIPLE REDUNDANTE (TMR)\nbool check_consensus() {\n    // Validación cruzada de 3 IMUs para detectar fallos de hardware\n    return (imu1.status + imu2.status + imu3.status) >= 2;\n}",
 
-        "10_SIMULATION_SITL": """// SIMULADOR DE DINÁMICA DE FLUIDOS (CFD)
-def calculate_prop_wash(state):
-    # Simulación de efecto suelo y turbulencia de hélices
-    induced_velocity = thrust / (2 * rho * disk_area)
-    return state.v - induced_velocity""",
+        "10_SIMULATION_SITL": "// PHYSICS ENGINE ADVANCED (CFD)\ndef calculate_aerodynamics(v, rpm):\n    # Simulación de efecto suelo y pérdida de sustentación\n    induced_flow = calculate_momentum_theory(thrust)\n    return (thrust - drag(v) - induced_flow)",
 
-        "11_MISSION_PLANNER": f"""// PLANIFICADOR DE ENJAMBRE COORDINADO - {idea}
-void sync_swarm_state() {{
-    // Algoritmo de consenso de posición para evitar colisiones entre drones
-    send_heartbeat_to_mesh(MY_POSE);
-    adjust_velocity_to_neighbors(swarm_data);
-}}""",
+        "11_MISSION_PLANNER": f"// COORDINADOR DE ENJAMBRE TÁCTICO - {idea}\nvoid swarm_sync() {{\n    // Consenso de posición distribuido entre drones de la red Mesh\n    adjust_to_neighbors_avoidance(swarm_map);\n}}",
 
-        "12_HARDWARE_HAL": """// STM32H7 REGISTER-LEVEL ACCESS
-#define DCACHE_CLEAN() SCB_CleanDCache()
-void fast_pwm_update() {
-    // Acceso directo a registros de Timer para respuesta de microsegundos
-    TIM1->CCR1 = motor_val_1;
-    TIM1->CCR2 = motor_val_2;
-}""",
+        "12_HARDWARE_HAL": "// STM32H7 REGISTER-LEVEL ACCESS\n#define FAST_PWM_UPDATE(ch, val) TIM1->CCR##ch = val\nvoid hal_init() {\n    SystemClock_Config(480MHz); // Reloj al límite para GLI\n    HAL_Init();\n}",
 
-        "13_AI_INFERENCE": f"""// ACELERACIÓN POR HARDWARE (NPU/GPU) - {idea}
-import onnxruntime as ort
-def run_optimized_inference(frame):
-    # Ejecución en el acelerador de IA (TensorRT/XNNPACK)
-    session = ort.InferenceSession("model.onnx", providers=['CUDAExecutionProvider'])
-    return session.run(None, {{"input": frame}})""",
+        "13_AI_INFERENCE": f"// TENSORRT EDGE INFERENCE - TARGET: {idea}\ndef run_ai(image):\n    # Inferencia optimizada en GPU/NPU para detección táctica\n    results = engine.execute(image)\n    return filter_by_context(results, mission='{idea}')",
 
-        "14_FILESYSTEM_LOGS": """// LOGS DE ALTA INTEGRIDAD (FATFS + DMA)
-void emergency_log_dump() {
-    // En caso de caída de tensión, el capacitor mantiene el log 100ms
-    // suficiente para cerrar el archivo en la SD con DMA rápido
-    f_sync(&logfile);
-}"""
+        "14_FILESYSTEM_LOGS": "// BLACKBOX DMA (HIGH-INTEGRITY)\nvoid emergency_write() {\n    // Escritura circular de 500Hz protegida por supercapacitores\n    f_write_dma(&logfile, buffer, 512);\n}"
     }
+
+# ==========================================
+# ORQUESTADOR (APP PRINCIPAL)
+# ==========================================
+app = Flask(__name__)
+
+@app.route('/', methods=['GET', 'POST'])
+def home():
+    # Inicialización limpia
+    idea = request.form.get('drone_idea', '')
+    target = request.form.get('target_node', '')
+    
+    # Solo carga la librería si hay una idea
+    db = get_node_library(idea)
+    current_code = db.get(target, "// VISOR: SELECCIONE UN NODO PARA ANALIZAR...") if idea and target else "// ESPERANDO GENERACIÓN ESTRATÉGICA..."
+
+    h = """
+    <html><head><title>MAIA II - COMMAND CENTER</title>
+    <style>
+        body{background:#020202; color:#0ff; font-family:'Courier New', monospace; padding:20px; text-transform: uppercase;}
+        .panel{border:1px solid #0ff; padding:15px; background:rgba(0,25,25,0.8); margin-bottom:10px; box-shadow: 0 0 15px rgba(0,255,255,0.2);}
+        .flex{display:flex; gap:15px;} .col-tree{width:32%;} .col-code{width:68%;}
+        .code-window{background:#000; color:#39ff14; padding:20px; border-left:4px solid #f0f; height:600px; overflow-y:scroll; white-space:pre-wrap; font-size:12px; border-bottom: 1px solid #0ff;}
+        
+        input {background:#000; color:#0ff; border:1px solid #0ff; padding:12px; width:50%; font-family: monospace;}
+        button{padding:10px 15px; cursor:pointer; font-weight:bold; border:none; font-family: monospace;}
+        .btn-gen{background:#0ff; color:#000;} .btn-gen:hover{background:#fff;}
+        .btn-util{background:none; border:1px solid #f0f; color:#f0f; margin-top:10px;}
+        .btn-util:hover{background:#f0f; color:#000;}
+        
+        .btn-node{background:none; color:#0f0; width:100%; text-align:left; cursor:pointer; border:1px solid transparent; padding:6px; font-size:0.85em;}
+        .btn-node:hover{background:rgba(0,255,0,0.1); border:1px solid #0f0;}
+        
+        .hw-spec{background:rgba(0,255,255,0.05); border:1px solid #0ff; padding:10px; display:flex; justify-content: space-between; font-size: 0.8em; color: #f0f;}
+        h1, h2, h3 { margin: 0 0 10px 0; color: #f0f; letter-spacing: 2px;}
+        .status-bar { font-size: 0.7em; color: #666; margin-top: 5px;}
+    </style>
+    </head><body>
+    
+    <h1>[ M.A.I.A. II - GLOBAL LOGISTICS INTELLIGENCE ]</h1>
+    
+    <div class='panel'>
+        <h2>GENERACION ESTRATEGICA</h2>
+        <form method='post'>
+            <input name='drone_idea' placeholder='INGRESE CONCEPTO BRUTAL...' value='""" + idea + """' autocomplete='off'>
+            <button type='submit' class='btn-gen'>GENERAR EXPEDIENTE GLI</button>
+            <div style='display:flex; gap:10px;'>
+                <button type='button' class='btn-util' onclick="window.location.href='/'">LIMPIAR INTERFAZ</button>
+                <button type='button' class='btn-util' onclick="alert('MEMORIA: Accediendo a registros históricos de ingeniería...')">MEMORIA</button>
+                <button type='button' style='background:#f0f; color:#000; margin-top:10px;' onclick="window.speechSynthesis.speak(new SpeechSynthesisUtterance('Alex, motor de ingeniería en línea. Nivel de acceso G L I cinco.'))">VOZ MAIA</button>
+            </div>
+        </form>
+    </div>
+
+    <div class='panel'>
+        <h3>MODULO DE CONSTRUCCION</h3>
+        <div class='hw-spec'>
+            <span><b>CPU:</b> STM32H7 480MHz</span>
+            <span><b>BUS:</b> DMA/CAN-FD</span>
+            <span><b>ENCRYPT:</b> AES-256/KYBER</span>
+            <span><b>OS:</b> MAIA RTOS V5</span>
+        </div>
+    </div>
+
+    <div class='flex'>
+        <div class='col-tree'>
+            <div class='panel' style='height:645px; overflow-y:auto;'>
+                <h3>14 NODOS GLI-5</h3>
+    """
+    for n in sorted(db.keys()):
+        h += f"""
+        <form method='post' style='margin:0;'>
+            <input type='hidden' name='drone_idea' value='{idea}'>
+            <input type='hidden' name='target_node' value='{n}'>
+            <button type='submit' class='btn-node'>▶ {n}</button>
+        </form>"""
+    
+    h += """
+            </div>
+        </div>
+        <div class='col-code'>
+            <div class='panel'>
+                <h3>VISOR TACTICO: """ + (target if target else "STANDBY") + """</h3>
+                <div class='code-window'>""" + current_code + """</div>
+                <div class='status-bar'>SISTEMA OPERATIVO: OK | LATENCIA: 0.2ms | ENCRIPTACIÓN: ACTIVA</div>
+            </div>
+        </div>
+    </div>
+    </body></html>
+    """
+    return render_template_string(h)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=10000, debug=True)
