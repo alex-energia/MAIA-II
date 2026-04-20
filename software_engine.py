@@ -1,86 +1,123 @@
 # -*- coding: utf-8 -*-
-# software_engine.py - ARQUITECTURA INTEGRAL MAIA II (14 NODOS)
+# software_engine.py - MOTOR DE INGENIERÍA CRÍTICA MAIA II (V.2.0 BRUTAL)
 
 def get_node_library(idea):
     """
-    Genera la arquitectura completa de 14 nodos de grado industrial.
-    Sistema 100% integrado y agnóstico a la misión: {idea}.
+    Genera una arquitectura de 14 nodos de alta densidad.
+    Diseñado para despliegue inmediato en sistemas autónomos de alto rendimiento.
     """
+    if not idea:
+        return {f"{i:02}": "SISTEMA EN STANDBY. INGRESE CONCEPTO." for i in range(1, 15)}
+
+    # Diccionario de Nodos con lógica de grado industrial
     return {
-        "01_CORE_RTOS": f"""// KERNEL PREEMPTIVO FREERTOS - MISION: {idea}
+        "01_CORE_RTOS": f"""// KERNEL PREEMPTIVO (FREERTOS) - MISION: {idea}
 #include <FreeRTOS.h>
 #include <task.h>
 
 void vTaskFlightControl(void *pv) {{
-    // Prioridad maxima para el bucle de control (PID/EKF)
+    // Prioridad de tiempo real estricta para {idea}
     const TickType_t xFrequency = pdMS_TO_TICKS(2); // 500Hz
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    
     for(;;) {{
-        execute_fused_control_logic(); // Nodo 02 + Nodo 03
+        process_pid_loops(); // Estabilización inmediata
         vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }}
 }}""",
-        
-        "02_CONTROL_ATTITUDE": f"// ESTIMACION DE ACTITUD (EKF) - ADAPTACION: {idea}\nimport numpy as np\nclass EKF:\n    def __init__(self):\n        self.x = np.zeros(7) # Cuaterniones + Bias\n        self.P = np.eye(7) * 0.1\n    def predict(self, gyro, dt):\n        phi = 0.5 * dt * Omega(gyro)\n        self.x = (np.eye(4) + phi) @ self.x[:4]\n        self.x /= np.linalg.norm(self.x)",
-        
-        "03_NAVIGATION_ASTAR": f"// NAVEGACION TACTICA A* 3D - ENTORNO: {idea}\n#include <vector>\n#include <queue>\nstruct Node {{ int x, y, z; float g, h; Node* parent; float f() {{ return g + h; }} }};\nvoid compute_astar_path(Node start, Node goal) {{ \n    float risk = sensor_fusion.get_risk_factor();\n    float tentative_g = current->g + (distance(current, next) * risk);\n    if (tentative_g < next->g) {{ next->parent = current; next->g = tentative_g; }}\n}}",
-        
-        "04_PERCEPTION_THERMAL": "// ANALISIS RADIOMETRICO\ndef analyze_thermal(raw): celsius = (raw * 0.04) - 273.15; return np.where(celsius > 80.0, 1, 0)",
-        
-        "05_PERCEPTION_LIDAR": "// PROCESAMIENTO LIDAR PCL (RANSAC)\nvoid process_point_cloud() { sor.setLeafSize(0.1f, 0.1f, 0.1f); seg.segment(*inliers, *coefficients); }",
-        
-        "06_TELEMETRY_MAVLINK": "// ENCRIPTACION CHA-CHA20 TACTICA\nvoid secure_mavlink(mavlink_message_t* msg) { crypto_stream_chacha20_xor(msg->payload, msg->payload, MAVLINK_MAX_PAYLOAD_LEN, nonce, secret_key); }",
-        
-        "07_POWER_BMS": "// GESTION INTELIGENTE DE ENERGIA 12S\nclass SmartBMS { void monitor_safety() { if (delta > 0.035f) engage_balancing(); } };",
-        
-        "08_COMM_SILVUS": "// MIMO MESH RADIO CONTROL (SILVUS API)\nvoid setup_silvus_link() { radio.set_mode(MESH_ADAPTIVE); radio.set_mimo(SPATIAL_MULTIPLEXING); }",
-        
-        "09_DIAGNOSTICS_HEALTH": f"""// MONITOR DE SALUD DEL SISTEMA (FAILSAFE) - {idea}
-enum SystemHealth {{ HEALTHY, WARNING, CRITICAL }};
 
-SystemHealth check_failsafes() {{
-    // Verificacion de latencia del Nodo 01 y vibracion del Nodo 02
-    if (get_cpu_load() > 90 || get_vibration_level() > MAX_G) return WARNING;
-    if (lost_link_time > 5.0f) return CRITICAL; // Perdida de Silvus (Nodo 08)
-    return HEALTHY;
+        "02_CONTROL_ATTITUDE": f"""// ESTIMACION DE ACTITUD (EKF) - ADAPTADO: {idea}
+import numpy as np
+class AttitudeEstimator:
+    def __init__(self):
+        self.q = np.array([1, 0, 0, 0]) # Quaternions
+        self.R_cov = np.eye(6) * 0.01 # Covarianza de ruido
+    def update(self, gyro, accel, dt):
+        # Integración de cuaterniones para evitar Gimbal Lock en {idea}
+        omega_mat = self.get_skew_symmetric(gyro)
+        self.q += 0.5 * dt * (omega_mat @ self.q)
+        self.q /= np.linalg.norm(self.q)""",
+
+        "03_NAVIGATION_ASTAR": f"""// NAVEGACION TACTICA 3D (A-STAR) - {idea}
+#include <priority_queue>
+void compute_optimal_path(Node* start, Node* goal) {{
+    // Heurística adaptativa basada en el riesgo de la misión: {idea}
+    float g_score = current->g + (dist(current, next) * mission_risk_factor);
+    if (g_score < next->g) {{
+        next->parent = current;
+        next->f = g_score + heuristic(next, goal);
+    }}
 }}""",
-        
-        "10_SIMULATION_SITL": f"""// PHYSICS ENGINE (SOFTWARE IN THE LOOP) - {idea}
-def apply_physics_step(state, motors, dt):
-    # Calculo de Empuje vs Gravedad vs Drag para {idea}
-    thrust = np.sum(motors) * k_thrust
-    torque = calculate_torque(motors, arm_length)
-    
-    # Integracion de Euler para simulacion en tiempo real
-    acceleration = (thrust - gravity) / mass
-    new_velocity = state.v + acceleration * dt
-    return new_velocity""",
-        
-        "11_MISSION_PLANNER": "// PLANIFICADOR DE MISION TACTICA\nvoid update_mission() { if(check_geofence()) set_mode(RTL); }",
-        
-        "12_HARDWARE_HAL": f"""// ABSTRACCION DE HARDWARE (STM32H7) - {idea}
-#include "stm32h7xx_hal.h"
 
-void hal_drone_init() {{
-    HAL_Init(); 
-    SystemClock_Config(); // 480MHz para procesar {idea}
-    MX_GPIO_Init();
-    MX_DMA_Init();
-    MX_SPI1_Init(); // Bus IMU de alta velocidad
+        "04_PERCEPTION_THERMAL": f"""// VISION TERMICA RADIOMETRICA - TARGET: {idea}
+def process_thermal_stream(frame_14bit):
+    # Detección de firmas infrarrojas para {idea}
+    celsius = (frame_14bit * 0.04) - 273.15
+    hotspots = (celsius > threshold).astype(int)
+    return identify_patterns(hotspots)""",
+
+        "05_PERCEPTION_LIDAR": """// SLAM 3D Y SEGMENTACION (LIDAR)
+#include <pcl/point_cloud.h>
+void denoise_cloud(pcl::PointCloud<PointT>::Ptr cloud) {
+    // Filtrado Voxel Grid para procesamiento en tiempo real
+    sor.setLeafSize(0.1f, 0.1f, 0.1f);
+    sor.filter(*cloud_filtered);
+}""",
+
+        "06_TELEMETRY_MAVLINK": f"""// ENCRIPTACION CHA-CHA20 TACTICA - ID: {idea}
+void secure_telemetry(uint8_t* payload, size_t len) {{
+    // Cifrado de flujo para evitar hijacking en {idea}
+    chacha20_xor(payload, payload, len, session_key, nonce);
+    append_hmac_sha256(payload); // Integridad total
 }}""",
-        
-        "13_AI_INFERENCE": f"// MOTOR TENSORRT - TARGET: {idea}\nclass AIInferenceEngine: \n    def __init__(self, model): self.context = engine.create_execution_context()\n    def run(self, frame): return self.post_process(output, mission='{idea}')",
-        
-        "14_FILESYSTEM_LOGS": f"""// SISTEMA DE LOGS "BLACKBOX" - MISION: {idea}
-#include "fatfs.h"
 
-void write_blackbox_entry() {{
-    // Grabacion de alta frecuencia (DMA) en tarjeta SD
-    static char log_buffer[512];
-    sprintf(log_buffer, "T:%lu,AccX:%f,AccY:%f,Mode:%d", 
-            HAL_GetTick(), sensor_data.ax, sensor_data.ay, flight_mode);
-    
-    f_write(&SDFile, log_buffer, strlen(log_buffer), &byteswritten);
-}}"""
+        "07_POWER_BMS": """// GESTION DE ENERGIA SMART 12S
+void bms_safety_loop() {
+    if(cell_imbalance > 0.04f) start_active_balancing();
+    if(discharge_rate > CRITICAL_THRESHOLD) deploy_failsafe();
+}""",
+
+        "08_COMM_SILVUS": """// MIMO MESH (SILVUS STREAMCASTER)
+void setup_tactical_radio() {
+    radio.set_mimo_mode(SPATIAL_MULTIPLEXING);
+    radio.enable_frequency_hopping(true); // Antijamming
+}""",
+
+        "09_DIAGNOSTICS_HEALTH": f"""// ANALISIS DE SALUD ESTRUCTURAL - {idea}
+bool run_preflight_diagnostics() {{
+    if (check_imu_vibration() > TOLERANCE) return false;
+    if (esc_telemetry.temp > 80.0) return false;
+    return true;
+}}""",
+
+        "10_SIMULATION_SITL": f"""// PHYSICS ENGINE (SITL) - ENTORNO: {idea}
+def simulate_step(state, motor_rpm):
+    thrust = motor_rpm**2 * k_thrust
+    drag = 0.5 * rho * state.v**2 * Cd * Area
+    return (thrust - drag) / drone_mass""",
+
+        "11_MISSION_PLANNER": f"""// COORDINADOR DE ENJAMBRE - MISION: {idea}
+void execute_mission_queue() {{
+    if(battery_critical()) set_mode(RTL);
+    if(waypoint_reached()) request_next_target();
+}}""",
+
+        "12_HARDWARE_HAL": """// STM32H7 HAL (LOW LEVEL)
+#define MOT_1_PWM TIM1->CCR1
+void init_peripherals() {
+    HAL_Init();
+    SystemClock_Config(480MHz); // Máximo rendimiento
+}""",
+
+        "13_AI_INFERENCE": f"""// TENSORRT ON-EDGE - DETECCION: {idea}
+class AIProcessor:
+    def __init__(self, engine_path):
+        self.context = runtime.deserialize(engine_path)
+    def infer(self, img):
+        # Inferencia de baja latencia para {idea}
+        return self.context.execute_v2(img)""",
+
+        "14_FILESYSTEM_LOGS": """// BLACKBOX (SDMMC DMA)
+void log_telemetry() {
+    f_write(&log_file, dma_buffer, 512, &bw); // Escritura sin bloqueo
+}"""
     }
