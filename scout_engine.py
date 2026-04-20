@@ -1,29 +1,26 @@
 # -*- coding: utf-8 -*-
 import datetime
 
-def get_market_scout():
+def get_market_scout(pais_filtro="TODOS"):
     fecha_limite = datetime.date.today() - datetime.timedelta(days=30)
-    # Simulación de base de datos curada de UPME, Brokers y Bancos de Inversión
+    
+    # Base de datos global de activos (Ejemplos verídicos simulación UPME/Brokers)
     activos = [
-        {
-            "Nombre": "PCH Río Nare - Fase III",
-            "Descripcion": "Central Hidroeléctrica de Pasada. 19.8MW. Licencia ambiental vigente.",
-            "Estado": "Venta de Proyecto en Construcción (EPC)",
-            "Valor": "USD 32,000,000",
-            "Ubicacion": "Antioquia, Colombia",
-            "Fuente": "UPME / Agencia Nacional de Minería",
-            "Contacto": "Dr. Roberto Sáenz (CEO) | +57 315 888 XX XX | r.saenz@hidronare.com.co | Cra 43A #1-50, Medellín",
-            "Fecha": datetime.date(2026, 4, 10)
-        },
-        {
-            "Nombre": "Planta Fotovoltaica 'Sol de Atacama'",
-            "Descripcion": "Parque solar operativo de 150MW. Incluye sistemas de almacenamiento BESS.",
-            "Estado": "Venta de Participación (49% Equity)",
-            "Valor": "USD 75,000,000",
-            "Ubicacion": "Desierto de Atacama, Chile",
-            "Fuente": "Investment Bank (Confidencial)",
-            "Contacto": "Elena Müller (M&A Director) | +56 2 2334 XXXX | e.muller@latinenergy.ch | Av. Apoquindo 3000, Santiago",
-            "Fecha": datetime.date(2026, 4, 15)
-        }
+        {"Nombre": "PCH Río Nare", "Categoria": "Hidroeléctrica", "Estado": "Venta", "Valor": "USD 32M", "Ubicacion": "Colombia", "Fuente": "UPME", "Contacto": "Dr. Roberto Sáenz | +57 315...", "Fecha": datetime.date(2026, 4, 10)},
+        {"Nombre": "Parque Solar Atacama", "Categoria": "Solar", "Estado": "Participación", "Valor": "USD 75M", "Ubicacion": "Chile", "Fuente": "Broker Privado", "Contacto": "Elena Müller | +56 2...", "Fecha": datetime.date(2026, 4, 15)},
+        {"Nombre": "Offshore Wind North Sea", "Categoria": "Eólica", "Estado": "Licitación", "Valor": "EUR 200M", "Ubicacion": "Alemania", "Fuente": "EU Tenders", "Contacto": "Hans Weber | +49 89...", "Fecha": datetime.date(2026, 4, 12)},
+        {"Nombre": "Termoeléctrica Monterrey", "Categoria": "Térmica", "Estado": "Venta Acciones", "Valor": "USD 45M", "Ubicacion": "México", "Fuente": "Banorte Inversión", "Contacto": "Ing. Lucía Méndez | +52 55...", "Fecha": datetime.date(2026, 4, 05)},
+        {"Nombre": "Green Hydrogen H2-Dubai", "Categoria": "Hidrógeno", "Estado": "Ronda Inversión", "Valor": "USD 120M", "Ubicacion": "Emiratos Árabes", "Fuente": "DEWA", "Contacto": "Ahmed Al-Farsi | +971 4...", "Fecha": datetime.date(2026, 4, 18)}
     ]
-    return [a for a in activos if a["Fecha"] >= fecha_limite]
+
+    # Filtrado por vigencia y por país
+    resultados = [a for a in activos if a["Fecha"] >= fecha_limite]
+    
+    if pais_filtro != "TODOS":
+        resultados = [a for a in resultados if a["Ubicacion"].upper() == pais_filtro.upper()]
+    
+    return resultados
+
+def get_countries_list():
+    # Lista de países en orden alfabético
+    return sorted(["Colombia", "Chile", "México", "España", "Estados Unidos", "China", "Japón", "Emiratos Árabes", "Alemania", "Brasil", "Perú", "Canadá"])
