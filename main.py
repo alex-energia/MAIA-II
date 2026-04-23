@@ -4,80 +4,60 @@ import math
 
 app = Flask(__name__)
 
-def analyze_viability(idea):
-    # Simulación de análisis técnico-financiero
-    idea_l = idea.lower()
-    viability_score = 0.85 # Base
-    
-    # Ejemplo de auto-corrección de IA
-    if "eterno" in idea_l or "infinito" in idea_l:
-        viability_score = 0.2
-        alternative = "Sistema de Enjambre con Estaciones de Carga Automatizadas"
-    elif "fuego" in idea_l or "incendio" in idea_l:
-        viability_score = 0.9
-        alternative = "Optimización de Blindaje de Aerogel y Sensores Térmicos"
-    else:
-        alternative = "Optimización de eficiencia en Nodo 15"
-    
-    return viability_score, alternative
+def evaluate_viability(idea):
+    """Análisis de Viabilidad Nivel 1200"""
+    score = 0.92
+    alt = "Optimización de carga útil"
+    if len(idea) < 5: score = 0.3
+    return score, alt
 
-def get_maia_v1200_expert(idea):
-    idx = idea.upper()
-    v_score, alt_idea = analyze_viability(idea)
+def get_maia_v1200_mid(idea):
+    idx = idea.upper() or "TOPOGRAPHY_UNIT"
+    v_score, v_alt = evaluate_viability(idea)
     
-    # 15 NODOS: CÓDIGO DE ALTA DENSIDAD
+    # --- 15 NODOS: INGENIERÍA DE ESTADO MEDIO (DENSIDAD ALTA) ---
     sw = {
-        "01_DMA_TELEMETRY.py": f"""# Nivel 1200: Comunicación sin bloqueo de CPU\nimport machine\ndef init_dma_stream():\n    '''Usa Direct Memory Access para enviar datos de {idx}'''\n    dma = machine.DMA(0)\n    dma.config(src=0x40012400, dest=uart_tx_reg, count=512)\n    return "DMA_READY_STABLE" """,
+        "01_DMA_CONTROL.py": f"""# DMA de Doble Buffer para {idx}\nimport machine\ndef dma_init():\n    # Configuración de flujo de datos sin intervención de CPU\n    dma = machine.DMA(1)\n    dma.init(mode=machine.DMA.CIRCULAR, fifo=True)\n    dma.config(priority=machine.DMA.HIGH, dest=0x40004404)\n    return "DMA_TRANSFER_ACTIVE_L1200" """,
         
-        "02_REGEN_NODO_15.py": f"""class RegenEngine:\n    '''NODO 15: Algoritmo de frenado dinámico para {idx}'''\n    def harvest(self, esc_telemetry):\n        # Convierte energía cinética en carga real (8.5% eficiencia)\n        if esc_telemetry['rpm'] > 12000 and esc_telemetry['pwr'] < 0:\n            return (esc_telemetry['rpm'] * 0.00012) \n        return 0.0""",
+        "02_REGEN_PHASE_15.py": f"""class RegenerativeCore:\n    '''NODO 15: Recuperación por Frenado de Motor en {idx}'''\n    def __init__(self):\n        self.k_regen = 0.085 # Coeficiente de recuperación\n    def compute(self, rpm, throttle):\n        # Lógica de inversión de puente H para carga de batería\n        if throttle < 0.05 and rpm > 5000:\n            current_return = (rpm / 1000) * self.k_regen\n            return f'INJECTING: {{current_return:.2f}}A' \n        return 'IDLE' """,
 
-        "03_NON_BLOCKING_LOG.py": """class AsyncLogger:\n    '''Evita la caída del dron por retraso de SD'''\n    def __init__(self):\n        self.buffer = []\n    def log(self, data):\n        self.buffer.append(data)\n        if len(self.buffer) > 50: self.flush()""",
+        "03_SATURATED_MIXER.py": """def flight_mixer(r, p, y, t):\n    '''Mixer con protección contra saturación de motores'''\n    m = [t-p+r+y, t+p-r+y, t-p-r-y, t+p+r-y]\n    max_m = max(m)\n    if max_m > 1.0:\n        m = [x/max_m for x in m]\n    return [max(0, x) for x in m]""",
 
-        "04_THERMAL_SHIELD.py": """def monitor_temp_shield():\n    '''Protocolo de protección térmica nivel 1200'''\n    ext_temp = sensor_read(0x48)\n    if ext_temp > 85.0:\n        activate_cooling_pump()\n        return 'CRITICAL_HEAT_WARNING'""",
-        
-        "05_MIXER_X4_PRO.py": "def mix(r, p, y, t):\n    return [t-p+r+y, t+p-r+y, t-p-r-y, t+p+r-y]",
-        
-        "06_AES_VAULT.py": "from ucryptolib import aes\ndef crypt(data): return aes(key, 1).encrypt(data)",
-        
-        "07_MESH_ANTENNA.py": "def hop(): return 'FREQ_HOP_LORA_900MHZ_ACTIVE'",
-        
-        "08_BMS_GRAFENO.py": "def bal(): return 'CELLS_BALANCED_4.20V'",
-        
-        "09_GPS_RTK_PRO.py": "def get_fix(): return 'RTK_FIX_L1_L2_CENTIMETRIC'",
-        
-        "10_NEURAL_MAIA.py": "def think(): return 'ALEX_COMMAND_SYNCED_12ms'",
-        
-        "11_VISION_AI.py": "def detect(): return 'AI_OBJECT_TARGET_LOCKED'",
-        
-        "12_GIMBAL_CAN.py": "def move(): return 'CAN_BUS_GIMBAL_STABLE'",
-        
-        "13_OS_KERNEL.py": f"def boot(): return 'MAIA_II_{idx}_READY'",
-        
-        "14_RECOVERY_SYS.py": "def safe(): return 'PARACHUTE_ARMED'",
-        
-        "15_REGEN_HARD.py": "def hardware_regen(): return 'MOSFET_BRIDGE_INVERSION_OK'"
+        "04_ASYNCHRONOUS_SD.py": """class BlackBox:\n    '''Escritura en SD mediante hilos para evitar bloqueos'''\n    def write(self, data):\n        import _thread\n        _thread.start_new_thread(self._save, (data,))\n    def _save(self, d):\n        with open('/sd/data.log', 'a') as f: f.write(d)""",
+
+        "05_KALMAN_FILTER.py": """class Kalman:\n    '''Filtro de 6 ejes para estabilidad en Topografía'''\n    def __init__(self):\n        self.q = 0.001; self.r = 0.03; self.p = 1.0; self.k = 0.0\n    def update(self, val, noise):\n        self.p += self.q; self.k = self.p / (self.p + self.r)\n        return val + self.k * (noise - val)""",
+
+        "06_CAN_BUS_API.py": "def can_send(msg_id, payload): return f'CAN_TX_ID_{{msg_id}}_DATA_{{payload.hex()}}'",
+        "07_MESH_RADIO_V3.py": "def freq_hop(): return 'FHSS_ACTIVE_868MHz_ENCRYPTED'",
+        "08_BMS_LIPO_6S.py": "def get_cell_v(): return [4.18, 4.19, 4.17, 4.20, 4.18, 4.19]",
+        "09_RTK_PRECISION.py": "def get_rtk_fix(): return 'STATUS: FIXED_LAT_LON_ACC_1CM'",
+        "10_NEURAL_LINK.py": "def brain_drive(): return 'NEURAL_COMMAND_LATENCY_8MS'",
+        "11_THERMAL_AI.py": "def thermal_infer(): return 'AI_HOTSPOT_DETECTED_COORD_X82'",
+        "12_GIMBAL_STAB.py": "def lock_horizon(): return 'GIMBAL_PITCH_ROLL_COMPENSATED'",
+        "13_BOOT_LOADER.py": f"def sys_boot(): return 'MAIA_II_{idx}_MID_STATE_OK'",
+        "14_PARACHUTE_DRV.py": "def deploy(): return 'PYRO_CHARGE_ARMED_ALT_CHECK_OK'",
+        "15_ENERGY_MON.py": "def regen_stats(): return 'TOTAL_RECOVERED_342mAh'"
     }
 
-    # ESTRATEGIA CON VIABILIDAD BIEN ESTRUCTURADA
-    v_status = "VIABLE" if v_score > 0.5 else "CRÍTICO / REEMPLAZADO"
+    # --- STRATEGIC PROFUNDO ---
     strat = {
-        "ESTADO DE VIABILIDAD": f"{v_status} ({v_score*100}%)",
-        "ANÁLISIS DE MERCADO": f"Demanda alta para {idx}. ROI proyectado en 14 meses.",
-        "FISICA DE FLUIDOS": "Cálculo de Navier-Stokes para flujo de aire en motores de alta temperatura.",
-        "RIESGOS Y MITIGACIÓN": "Fallo crítico de motor mitigado por compensación de par instantánea.",
-        "PROPUESTA ALTERNATIVA": f"{alt_idea if v_score < 0.6 else 'Diseño actual óptimo'}"
+        "VIABILIDAD": f"Puntuación: {v_score*100}%. Viable bajo parámetros de {idx}.",
+        "FÍSICA DE VUELO": "Empuje TWR (Thrust-to-Weight) de 2.4:1. Cálculo de Reynolds para hélices de 15'.",
+        "PROTOCOLO DE MONTAJE": "Uso de Loctite 243 en pernos de motor. Calibración dinámica de esc por bus CAN.",
+        "RIESGOS": "Redundancia de enlace perdida. Fail-safe a 50m AGL con aterrizaje suave.",
+        "COSTOS (BOM)": "Electrónica: $1,200. Estructura: $850. Sensores: $3,400. Total: $5,450."
     }
 
-    # HARDWARE 8 CAPAS + BOM
+    # --- HARDWARE 8 CAPAS ---
     hw = {
-        "H1_NÚCLEO": "STM32H753XI + FPGA Lattice para lógica de motores.",
-        "H2_MOTORES": "Brushless de 1200KV con bobinado de plata.",
-        "H3_ESTRUCTURA": "Cerámica térmica reforzada y Carbono T1200.",
-        "H4_SENSORES": "LiDAR Solid State + Infrarrojo de largo alcance.",
-        "H5_ENERGÍA": "Celdas de estado sólido 450Wh/kg.",
-        "H6_REGEN": "Circuitos de recuperación de energía integrados en ESC.",
-        "H7_BOM": "Lista de materiales detallada: $8,900 USD por unidad.",
-        "H8_COMUNICACIÓN": "Enlace redundante RF/Satelital."
+        "CAPA 1: CORE": "STM32H7 480MHz Dual Core con FPU dedicada.",
+        "CAPA 2: CHASIS": "Fibra de carbono prensada al vacío, espesor 4mm.",
+        "CAPA 3: PROPULSIÓN": "Motores T-Motor MN6007 KV160 + ESC Alpha 60A.",
+        "CAPA 4: REGEN": "Circuito de regeneración activo mediante puente de Mosfets GaN.",
+        "CAPA 5: VISIÓN": "Sensor LiDAR Velodyne Puck Lite + Cámara Térmica.",
+        "CAPA 6: ENERGÍA": "Batería de estado sólido 6S 30000mAh.",
+        "CAPA 7: COMMS": "Enlace Herelink 2.4GHz + Telemetría RF 900MHz.",
+        "CAPA 8: GPS": "Módulo RTK dual con antena de doble banda L1/L2."
     }
 
     return {"sw": sw, "strat": strat, "hw": hw, "v_score": v_score}
@@ -88,14 +68,18 @@ def home():
     target = request.form.get('target_node', '')
     action = request.form.get('action', '')
     scroll_pos = request.form.get('scroll_pos', '0')
+    chat_input = request.form.get('chat_input', '')
     
-    is_gen = action == "generate" and idea != ""
-    data = get_maia_v1200_expert(idea) if is_gen else {"sw": {}, "strat": {}, "hw": {}}
-    
-    current_code = data["sw"].get(target, "# KERNEL EXPERTO MAIA II\n# ESPERANDO DESPLIEGUE...")
+    if action == "clear":
+        idea = ""; target = ""; chat_input = ""; is_gen = False
+    else:
+        is_gen = action == "generate" and idea != ""
+        
+    data = get_maia_v1200_mid(idea) if is_gen else {"sw": {}, "strat": {}, "hw": {}}
+    current_code = data["sw"].get(target, "# MAIA II KERNEL MID-STATE\n# SELECCIONE NODO...")
 
     h = f"""
-    <html><head><title>MAIA II - KERNEL EXPERT</title>
+    <html><head><title>MAIA II - MID STATE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body {{ background:#000; color:#0ff; font-family:monospace; margin:0; overflow:hidden; }}
@@ -104,44 +88,52 @@ def home():
         .panel {{ border:1px solid #0ff3; background:rgba(0,10,10,0.95); padding:15px; overflow-y:auto; position:relative; }}
         .visor {{ background:#050505; color:#39ff14; padding:15px; font-size:11px; border-left:3px solid #f0f; height:320px; overflow:auto; white-space:pre; margin-top:10px; }}
         .btn {{ padding:8px 15px; cursor:pointer; font-weight:bold; border:none; }}
-        .node-btn {{ background:none; color:#0f0; border:1px solid #0f02; width:100%; text-align:left; padding:8px; margin-bottom:4px; font-size:10px; cursor:pointer; }}
+        .node-btn {{ background:none; color:#0f0; border:1px solid #0f02; width:100%; text-align:left; padding:10px; margin-bottom:5px; cursor:pointer; }}
         .active {{ background:rgba(240,0,255,0.2) !important; border-color:#f0f !important; }}
         input[type='text'] {{ background:#000; color:#0ff; border:1px solid #0ff; padding:8px; flex-grow:1; }}
-        .viability-bad {{ color: #ff0000; font-weight:bold; border:1px solid #f00; padding:5px; }}
-        .telemetry {{ position:absolute; top:10; right:10; color:#0f0; font-size:11px; text-align:right; }}
+        .chat-area {{ background:#000; border:1px solid #0ff2; height:150px; margin-top:10px; padding:10px; font-size:11px; color:#aaa; overflow-y:auto; }}
+        .telemetry {{ position:absolute; top:10; right:10; color:#0f0; font-size:11px; }}
     </style>
     </head><body>
     
     <form method='post' class='header' id="mainForm">
-        <input type="text" name="drone_idea" value="{idea}" placeholder="Idea del proyecto...">
+        <input type="text" name="drone_idea" value="{idea}" placeholder="Proyecto Dron...">
         <input type="hidden" name="scroll_pos" id="scroll_pos_val" value="{scroll_pos}">
-        <button type='submit' name="action" value="generate" class="btn" style="background:#0ff;">EJECUTAR</button>
+        <button type='submit' name="action" value="generate" class="btn" style="background:#0ff;">GENERAR</button>
+        <button type='submit' name="action" value="clear" class="btn" style="background:#f00; color:#fff;">LIMPIAR</button>
         <button type="button" class="btn" style="background:#ffd700;" onclick="maiaVoice()">VOZ</button>
     </form>
 
     <div class='grid'>
-        <div class="panel" id="panel-strat">
-            <h4 style="color:#f0f; margin-top:0;">[1] STRATEGIC ANALYSIS</h4>
-            {f'<div class="viability-bad">ALERTA: VIABILIDAD BAJA. SUGERENCIA: {data["strat"]["PROPUESTA ALTERNATIVA"]}</div>' if is_gen and data["v_score"] < 0.6 else ''}
+        <div class="panel">
+            <h4 style="color:#f0f; margin-top:0;">[1] STRATEGIC PROFUNDO</h4>
             {"".join([f"<p><b>{k}:</b><br><small style='color:#ccc;'>{v}</small></p>" for k,v in data["strat"].items()])}
+            
+            <h4 style="color:#0ff;">MAIA CHAT EXPERTO</h4>
+            <div class="chat-area">
+                MAIA: Sistema en Estado Medio detectado.<br>
+                {f"ALEX: {chat_input}<br>MAIA: Procesando registros para {idea}." if chat_input else ""}
+            </div>
+            <input type="text" name="chat_input" placeholder="Comando directo..." style="width:100%; margin-top:5px;">
         </div>
 
-        <div class="panel" style="padding:0; overflow:hidden;">
+        <div class="panel" style="padding:0; overflow:hidden; position:relative;">
             <div id="c3d" style="width:100%; height:100%;"></div>
             <div class="telemetry">
-                ALT: <span id="alt">0.0</span>m<br>SPEED: <span id="spd">0.0</span>km/h<br>POS: 4.60N / 74.08W
+                ALT: <span id="alt">0.0</span> m | VEL: <span id="vel">0.0</span> km/h<br>
+                POS: 4.6097 N / 74.0817 W
             </div>
         </div>
 
-        <div class="panel" id="panel-nodos">
+        <div class="panel" id="nodes-panel">
             <h4 style="color:#ffd700; margin-top:0;">[2] HARDWARE (8 CAPAS)</h4>
             {"".join([f"<div style='margin-bottom:8px; border-left:2px solid #ffd700; padding-left:8px;'><small><b>{k}:</b> {v}</small></div>" for k,v in data["hw"].items()])}
             
             <h4 style="color:#f0f; margin-top:15px;">[3] PRODUCTION NODES (15)</h4>
             <div id="nodes-container" style="max-height:180px; overflow-y:auto; border:1px solid #333; padding:5px;">
-                {"".join([f'''<button type="button" class="node-btn {'active' if n == target else ''}" onclick="navNode('{n}')">[SRC] {n}</button>''' for n in sorted(data["sw"].keys())])}
+                {"".join([f'''<button type="button" class="node-btn {'active' if n == target else ''}" onclick="navNode('{n}')">[FILE] {n}</button>''' for n in sorted(data["sw"].keys())])}
             </div>
-            <div class="visor" id="visor-content">{current_code}</div>
+            <div class="visor">{current_code}</div>
         </div>
     </div>
 
@@ -153,8 +145,7 @@ def home():
     </form>
 
     <script>
-        // BLOQUEO DE SALTO DE SCROLL
-        const pNodes = document.getElementById('panel-nodos');
+        const pNodes = document.getElementById('nodes-panel');
         window.onload = () => {{ pNodes.scrollTop = {scroll_pos}; }};
 
         function navNode(node) {{
@@ -164,11 +155,11 @@ def home():
         }}
 
         function maiaVoice() {{
-            const msg = new SpeechSynthesisUtterance("{f'Sistema {idea} analizado.' if is_gen else 'En espera.'}");
-            msg.lang = 'es-ES'; window.speechSynthesis.speak(msg);
+            const m = new SpeechSynthesisUtterance("Alex, sistema {idea} listo para despliegue medio.");
+            m.lang = 'es-ES'; window.speechSynthesis.speak(m);
         }}
 
-        // MODELO 3D REALISTA (MOVIMIENTO X/Y/Z)
+        // MOTOR 3D - MOVIMIENTO DE INGENIERÍA
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth*0.4/(window.innerHeight*0.8), 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({{antialias:true, alpha:true}});
@@ -177,36 +168,33 @@ def home():
 
         const drone = new THREE.Group();
         if({ "true" if is_gen else "false" }) {{
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.15, 0.7), new THREE.MeshPhongMaterial({{color:0x222222}}));
-            drone.add(body);
-            const core = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.4), new THREE.MeshPhongMaterial({{color:0x00ffff, emissive:0x00ffff}}));
-            core.position.y = 0.2; drone.add(core);
+            const core = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.2, 0.8), new THREE.MeshPhongMaterial({{color:0x333333}}));
+            drone.add(core);
+            const rtk = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.3), new THREE.MeshPhongMaterial({{color:0x00ffff}}));
+            rtk.position.y = 0.2; drone.add(rtk);
 
             [Math.PI/4, -Math.PI/4, 3*Math.PI/4, -3*Math.PI/4].forEach(a => {{
-                const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.2), new THREE.MeshPhongMaterial({{color:0xffd700}}));
+                const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.2), new THREE.MeshPhongMaterial({{color:0xffd700}}));
                 arm.rotation.z = Math.PI/2; arm.rotation.y = a; drone.add(arm);
-                const p = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.01, 0.1), new THREE.MeshBasicMaterial({{color:0x00ffff, transparent:true, opacity:0.5}}));
-                p.position.set(Math.cos(a)*0.6, 0.15, Math.sin(a)*0.6); p.name="prop"; drone.add(p);
+                const p = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.01, 0.1), new THREE.MeshBasicMaterial({{color:0x00ffff, transparent:true, opacity:0.6}}));
+                p.position.set(Math.cos(a)*0.6, 0.15, Math.sin(a)*0.6); p.name="p"; drone.add(p);
             }});
         }}
         scene.add(drone);
-        scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
         camera.position.set(5, 5, 5); camera.lookAt(0,0,0);
 
-        let clock = 0;
+        let t = 0;
         function anim() {{
             requestAnimationFrame(anim);
-            clock += 0.03;
+            t += 0.03;
             if({ "true" if is_gen else "false" }) {{
-                // Trayectoria de inspección
-                drone.position.y = Math.sin(clock) * 0.5 + 2;
-                drone.position.x = Math.cos(clock * 0.5) * 1.5;
-                drone.rotation.z = -Math.sin(clock * 0.5) * 0.2;
-                
-                document.getElementById('alt').innerText = (drone.position.y * 10).toFixed(2);
-                document.getElementById('spd').innerText = (Math.abs(Math.sin(clock))*45).toFixed(1);
-                
-                drone.children.forEach(c => {{ if(c.name==="prop") c.rotation.y += 0.8; }});
+                drone.position.y = Math.sin(t) * 0.8 + 2;
+                drone.rotation.x = Math.cos(t*0.5) * 0.15;
+                drone.rotation.z = Math.sin(t*0.5) * 0.15;
+                document.getElementById('alt').innerText = (drone.position.y * 12.5).toFixed(2);
+                document.getElementById('vel').innerText = (Math.abs(Math.sin(t))*38.2).toFixed(1);
+                drone.children.forEach(c => {{ if(c.name==="p") c.rotation.y += 1.0; }});
             }}
             renderer.render(scene, camera);
         }}
