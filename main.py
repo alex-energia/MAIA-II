@@ -1,184 +1,176 @@
 # -*- coding: utf-8 -*-
 from flask import Flask, render_template_string, request
-import json
+import random
 
 app = Flask(__name__)
 
-# --- MOTOR DE GENERACIÓN DINÁMICA (ADAPTATIVO POR IDEA) ---
-def generate_custom_engine(idea):
-    idea_low = idea.lower()
-    
-    # 1. HARDWARE ADAPTATIVO
-    if "carrera" in idea_low or "racing" in idea_low:
-        hw = {"CHASIS": "Carbono Ultra-ligero 3mm", "MOTORES": "Brushless 2800KV (High Torque)", "BATERIA": "LiPo 4S 1300mAh 120C"}
-        strat = {"MISIÓN": "Velocidad y Agilidad", "VIABILIDAD": "Alta en competición", "RIESGO": "Extremo"}
-    elif "industrial" in idea_low or "minero" in idea_low or "escaneo" in idea_low:
-        hw = {"CHASIS": "Titanio Reforzado IP67", "MOTORES": "Cobra 1200KV (Heavy Lift)", "BATERIA": "Grafeno 6S 22000mAh"}
-        strat = {"MISIÓN": "Mapeo Crítico", "VIABILIDAD": "Baja inversión / Alto retorno", "RIESGO": "Moderado"}
-    else:
-        hw = {"CHASIS": "Fibra de Carbono T800", "MOTORES": "2400KV Estándar", "BATERIA": "Lipo 4S 5000mAh"}
-        strat = {"MISIÓN": "Multipurpose Tactical", "VIABILIDAD": "Media", "RIESGO": "Bajo"}
+def get_engineering_db(idea):
+    """Generador de Ingeniería Densa Nivel 1200 - 14 Nodos Independientes"""
+    i = idea.upper()
+    # Diccionario de lógica para los 14 nodos (Densidad de producción)
+    sw_nodes = {
+        "01_KERNEL_CORE.py": f"""import os, sys, time\nfrom typing import Final\n\n# Core de {i}\nSYS_ID: Final = "{random.randint(1000,9999)}"\n\nclass MaiaKernel:\n    def __init__(self):\n        self.is_auth = False\n        self.boot_time = time.time()\n\n    def verify_checksum(self) -> bool:\n        '''Valida integridad de binarios en Capa 2'''\n        return os.access('/proc/self/exe', os.R_OK)\n\n    def launch(self):\n        if self.verify_checksum():\n            print(f"MAIA II [{i}] ONLINE")\n            self.is_auth = True""",
 
-    # 2. CÓDIGO .PY 100% REAL (Lógica de Producción)
-    sw = {
-        "CORE_SYSTEM.py": f"""import os, sys, threading, time\nfrom typing import Final\n\nVERSION: Final = "1200.5.2"\n\nclass KernelMAIA:\n    def __init__(self, mode: str = "Tactical"):\n        self.start_time = time.time()\n        self.drone_id = os.getenv('DRONE_ID', 'ID-00X')\n        print(f"[BOOT] Initializing {{self.drone_id}} in {{mode}} mode...")\n\n    def run_health_check(self) -> bool:\n        # Lógica real de chequeo de sistema\n        critical_files = ['/sys/class/pwm/pwmchip0', '/dev/i2c-1']\n        return all(os.path.exists(f) for f in critical_files)\n\nif __name__ == "__main__":\n    k = KernelMAIA()\n    if k.run_health_check(): sys.exit(0)\n    else: sys.exit(1)""",
+        "02_HARDWARE_HAL.py": f"""import ctypes\n\ndef set_pwm_freq(channel: int, freq: int):\n    '''Capa de Abstracción de Hardware para motores de {i}'''\n    # Acceso directo a registros de memoria para baja latencia\n    _lib = ctypes.CDLL('/usr/lib/libmaiahw.so')\n    return _lib.pwm_write(channel, freq)""",
 
-        "FLIGHT_PID.py": """import time\nfrom dataclasses import dataclass\n\n@dataclass\nclass PIDParams:\n    kp: float; ki: float; kd: float\n\nclass PIDController:\n    def __init__(self, p: PIDParams):\n        self.p = p\n        self.integral = 0.0\n        self.prev_error = 0.0\n\n    def update(self, setpoint: float, measured: float, dt: float) -> float:\n        error = setpoint - measured\n        self.integral += error * dt\n        derivative = (error - self.prev_error) / dt\n        output = (self.p.kp * error) + (self.p.ki * self.integral) + (self.p.kd * derivative)\n        self.prev_error = error\n        return output\n\n# Implementación en tiempo real para estabilización vertical\ncontroller = PIDController(PIDParams(1.2, 0.01, 0.5))""",
+        "03_FLIGHT_PID.py": f"""class FlightPID:\n    def __init__(self, kp: float, ki: float, kd: float):\n        self.p, self.i, self.d = kp, ki, kd\n        self.error_sum = 0.0\n        self.prev_err = 0.0\n\n    def compute(self, target: float, current: float, dt: float) -> float:\n        '''Algoritmo de estabilidad para {i}'''\n        error = target - current\n        self.error_sum += error * dt\n        der = (error - self.prev_err) / dt\n        self.prev_err = error\n        return (self.p * error) + (self.i * self.error_sum) + (self.d * der)""",
 
-        "LIDAR_PRO.py": """import numpy as np\nfrom scipy.spatial import KDTree\n\nclass LidarProcessor:\n    def __init__(self, resolution: float = 0.05):\n        self.resolution = resolution\n        self.cloud = np.empty((0, 3))\n\n    def process_frame(self, raw_data: np.ndarray):\n        '''Filtra ruido usando un árbol KD para búsqueda de vecinos'''\n        if raw_data.size == 0: return\n        tree = KDTree(raw_data)\n        # Eliminar outliers estadísticos\n        d, _ = tree.query(raw_data, k=5)\n        mean_d = np.mean(d, axis=1)\n        self.cloud = raw_data[mean_d < (np.mean(mean_d) + 2*np.std(mean_d))]\n        return len(self.cloud)""",
+        "04_LIDAR_FUSION.py": f"""import numpy as np\n\ndef point_cloud_filter(raw_data: np.ndarray):\n    '''Filtro de densidad para mapeo de {i}'''\n    # Eliminación de ruido estadístico (SOR)\n    mean = np.mean(raw_data, axis=0)\n    dist = np.linalg.norm(raw_data - mean, axis=1)\n    return raw_data[dist < np.percentile(dist, 95)]""",
 
-        "COMM_ENCRYPT.py": """from cryptography.hazmat.primitives.ciphers.aead import AESGCM\nimport os\n\nclass SecureLink:\n    def __init__(self):\n        self.key = AESGCM.generate_key(bit_length=256)\n        self.aesgcm = AESGCM(self.key)\n\n    def encrypt_packet(self, data: bytes, nonce: bytes) -> bytes:\n        '''Cifrado auténtico con datos asociados (AEAD)'''\n        aad = b"MAIA_HEADER_V1200"\n        return self.aesgcm.encrypt(nonce, data, aad)\n\n    def decrypt_packet(self, ciphertext: bytes, nonce: bytes) -> bytes:\n        return self.aesgcm.decrypt(nonce, ciphertext, b"MAIA_HEADER_V1200")""",
-        
-        "AUTO_PILOT_V2.py": """import asyncio\n\nasync def mission_loop(waypoints: list):\n    '''Bucle asíncrono para no bloquear la telemetría'''\n    for wp in waypoints:\n        print(f"En route to: {wp}")\n        # Simulación de comando al ESC\n        await asyncio.sleep(0.5)\n        if await check_collision():\n            await emergency_evasion()\n\nasync def check_collision():\n    return False # Sensor logic here""",
-        
-        "BATTERY_CELLS.py": """class BatteryGuard:\n    def __init__(self, cells: int = 6):\n        self.cells = cells\n        self.critical_voltage = 3.3\n\n    def get_status(self, voltages: list):\n        if len(voltages) != self.cells: return "ERROR_CELL_COUNT"\n        lowest = min(voltages)\n        if lowest < self.critical_voltage:\n            return "CRITICAL_RETURN_TO_HOME"\n        return "STATUS_OK" """
+        "05_THERMAL_AI.py": f"""import cv2\n\ndef detect_anomalies(frame):\n    '''Inferencia de IA Térmica para {i}'''\n    net = cv2.dnn.readNetFromTensorflow('maia_v1200.pb')\n    blob = cv2.dnn.blobFromImage(frame, 1.0, (300, 300))\n    net.setInput(blob)\n    return net.forward()""",
+
+        "06_ENCRYPT_GCM.py": """from cryptography.hazmat.primitives.ciphers.aead import AESGCM\n\ndef secure_tx(data: bytes, key: bytes):\n    '''Cifrado de grado militar AES-256-GCM'''\n    aes = AESGCM(key)\n    nonce = os.urandom(12)\n    return aes.encrypt(nonce, data, b"MAIA_AUTH")""",
+
+        "07_MESH_ROUTING.py": f"""import socket\n\ndef init_mesh_node(node_id: int):\n    '''Protocolo de enjambre dinámico para {i}'''\n    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)\n    s.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 32)\n    return s""",
+
+        "08_BATTERY_BMS.py": f"""def balance_cells(voltages: list):\n    '''Gestión de celdas de Grafeno para {i}'''\n    target = sum(voltages)/len(voltages)\n    return [v - target for v in voltages if abs(v-target) > 0.01]""",
+
+        "09_GPS_RTK.py": """def get_precise_fix():\n    '''Posicionamiento centimétrico RTK L1/L2'''\n    from gnss_lib import RTKEngine\n    engine = RTKEngine(port='/dev/ttyAMA0', baud=921600)\n    return engine.get_solution()""",
+
+        "10_SONAR_EVASION.py": """def collision_avoidance(dist: float):\n    '''Lógica de evasión ultrasónica activa'''\n    if dist < 1.5:\n        throttle_cut()\n        execute_yaw_evasion(direction='left')\n    return 'PATH_CLEAR'""",
+
+        "11_TELEMETRY_HUD.py": """def update_ui_stream(stats: dict):\n    '''Inyección de telemetría en tiempo real'''\n    import json\n    return json.dumps({**stats, "status": "OPERATIONAL_V1200"})""",
+
+        "12_NEURAL_INTERFACE.py": f"""def bridge_brain_wave(wave_data):\n    '''Control por interfaz neuronal para {i}'''\n    alpha_threshold = 0.75\n    return "EXECUTE" if wave_data > alpha_threshold else "IDLE" """,
+
+        "13_STEALTH_MODE.py": """def ghost_protocol_on():\n    '''Reducción de firma acústica y térmica'''\n    set_motor_khz(48) # Frecuencia ultrasónica\n    led_array.off()\n    return True""",
+
+        "14_SYSTEM_AUDIT.py": """import psutil\n\ndef full_audit():\n    '''Reporte crítico de hardware y carga de CPU'''\n    return {\n        "cpu": psutil.cpu_percent(),\n        "mem": psutil.virtual_memory().percent,\n        "temp": psutil.sensors_temperatures()\n    }"""
+    }
+
+    # ESTRATEGIA Y HARDWARE ELITE
+    strat = {
+        "ANÁLISIS ESTRATÉGICO": f"Implementación de arquitectura descentralizada para '{i}'. Redundancia de misión N+2.",
+        "VIABILIDAD TÉCNICA": "ROI calculado en 1.2 años. Eficiencia energética optimizada mediante algoritmos de flujo laminar.",
+        "PROTOCOLO DE SEGURIDAD": "Cifrado de extremo a extremo con rotación de llaves cada 300 segundos.",
+        "OBJETIVOS TÁCTICOS": f"Infiltración y recolección de datos en entorno '{i}' con latencia inferior a 8ms."
     }
     
-    # Generar 14 nodos (rellenando si faltan para completar el set de 14)
-    for i in range(len(sw)+1, 15):
-        sw[f"NODE_EXT_{i:02d}.py"] = f"# Advanced Module {i}\n# Logic for specific {idea} deployment\n# Real production code interface"
+    hw = {
+        "CHASIS": "Monocasco de Fibra de Carbono T800 y refuerzos de Kevlar en nodos de impacto.",
+        "PROPULSIÓN": "Motores de levitación magnética con sensores Hall integrados para control de RPM absoluto.",
+        "ÓPTICA": "Sensor multiespectral 8K con estabilización mecánica mediante gimbal de 4 ejes.",
+        "NÚCLEO": "Procesador dedicado MAIA-V1200 con aceleración por hardware para visión artificial."
+    }
 
-    return {"strat": strat, "hw": hw, "sw": sw}
+    return {"sw": sw_nodes, "strat": strat, "hw": hw}
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
     idea = request.form.get('drone_idea', '')
     target = request.form.get('target_node', '')
-    scroll_pos = request.form.get('scroll_pos', '0')
     action = request.form.get('action', '')
-
-    is_generated = action == "generate" and idea != ""
+    chat_msg = request.form.get('chat_msg', '')
     
-    if is_generated:
-        data = generate_custom_engine(idea)
-    else:
-        data = {"strat": {}, "hw": {}, "sw": {}}
-        if action == "clear": idea = ""
-
-    current_code = data["sw"].get(target, "# SISTEMA EN ESPERA...\n# INGRESE IDEA Y PRESIONE GENERAR.") if is_generated else "# KERNEL VACÍO"
+    is_gen = action == "generate" and idea != ""
+    data = get_engineering_db(idea) if is_gen else {"sw": {}, "strat": {}, "hw": {}}
+    
+    current_code = data["sw"].get(target, "# MAIA II KERNEL\n# SELECCIONE NODO PARA INSPECCIÓN.") if is_gen else "# SISTEMA APAGADO"
 
     h = f"""
-    <html><head><title>MAIA II - ELITE INTERFACE</title>
+    <html><head><title>MAIA II - KERNEL v1200</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body {{ background:#000; color:#0ff; font-family:monospace; margin:0; overflow:hidden; }}
-        .header {{ display:flex; align-items:center; padding:15px; background:#001a1a; border-bottom:2px solid #0ff; gap:15px; }}
-        .grid-master {{ display:grid; grid-template-columns: 25% 45% 30%; gap:10px; height:88vh; padding:10px; }}
-        .panel {{ border:1px solid #0ff2; background:rgba(0,10,10,0.9); padding:15px; overflow-y:auto; border-radius:4px; }}
-        input[type="text"] {{ background:#000; color:#0ff; border:1px solid #0ff; padding:8px; flex-grow:1; font-family:monospace; }}
-        .btn {{ padding:8px 15px; cursor:pointer; font-weight:bold; border:none; border-radius:3px; }}
-        .btn-gen {{ background:#0ff; color:#000; }}
-        .btn-clear {{ background:#500; color:#fff; }}
-        .btn-maia {{ background:#f0f; color:#fff; }}
-        .node-btn {{ background:none; color:#0f0; border:1px solid #0f02; padding:8px; margin-bottom:5px; width:100%; text-align:left; cursor:pointer; font-size:10px; }}
-        .active-node {{ background:rgba(240,0,255,0.2) !important; border-color:#f0f !important; color:#fff !important; }}
-        .code-box {{ background:#050505; color:#39ff14; padding:15px; font-size:11px; border-left:3px solid #f0f; white-space:pre; height:280px; overflow-x:auto; line-height:1.4; }}
+        .header {{ display:flex; gap:10px; padding:15px; background:#001a1a; border-bottom:2px solid #0ff; }}
+        .grid {{ display:grid; grid-template-columns: 25% 45% 30%; gap:10px; height:88vh; padding:10px; }}
+        .panel {{ border:1px solid #0ff3; background:rgba(0,10,10,0.95); padding:15px; overflow-y:auto; border-radius:5px; }}
+        .code {{ background:#050505; color:#39ff14; padding:15px; font-size:11px; border-left:3px solid #f0f; height:350px; overflow:auto; white-space:pre; }}
+        .btn {{ padding:8px 15px; cursor:pointer; font-weight:bold; border:none; }}
+        .node-btn {{ background:none; color:#0f0; border:1px solid #0f02; width:100%; text-align:left; padding:6px; margin-bottom:3px; font-size:10px; }}
+        .active {{ background:rgba(240,0,255,0.2) !important; border-color:#f0f !important; }}
+        input[type='text'] {{ background:#000; color:#0ff; border:1px solid #0ff; padding:8px; flex-grow:1; }}
+        .chat-box {{ background:#000; border:1px solid #0ff2; height:100px; margin-top:10px; padding:5px; font-size:10px; overflow-y:auto; color: #aaa; }}
     </style>
     </head><body>
     
     <form method='post' class='header'>
-        <b style="color:#0ff; font-size:16px;">MAIA II</b>
-        <input type="text" name="drone_idea" value="{idea}" placeholder="Escriba la idea del dron (ej. Dron minero, Dron de carreras...)">
-        <button type='submit' name="action" value="generate" class="btn btn-gen">GENERAR</button>
-        <button type='submit' name="action" value="clear" class="btn btn-clear">LIMPIAR</button>
-        <button type="button" class="btn btn-maia" onclick="alert('VOZ MAIA: Procesando idea {idea}...')">VOZ MAIA</button>
+        <input type="text" name="drone_idea" value="{idea}" placeholder="Idea del Dron (Ej: Vigilancia Urbana, Inspección Térmica...)">
+        <button type='submit' name="action" value="generate" class="btn" style="background:#0ff;">GENERAR</button>
+        <button type='submit' name="action" value="clear" class="btn" style="background:#f00; color:#fff;">LIMPIAR</button>
+        <button type="button" class="btn" style="background:#ffd700;" onclick="speak()">VOZ MAIA</button>
     </form>
 
-    <div class='grid-master'>
+    <div class='grid'>
         <div class="panel">
-            <h4 style="color:#f0f; margin-top:0;">[1] STRATEGIC ENGINE</h4>
-            {"".join([f"<div style='margin-bottom:15px; border-bottom:1px solid #333;'><b>{k}</b><p style='color:#ccc;'>{v}</p></div>" for k,v in data["strat"].items()])}
-        </div>
-
-        <div class="panel" style="padding:0; overflow:hidden; position:relative;">
-            <div id="proto-container" style="width:100%; height:100%;"></div>
-            <div style="position:absolute; bottom:10px; left:10px; color:#0f0; font-size:9px;">CAM: ACTIVE | SENSOR: LOCK | IR: ON</div>
-        </div>
-
-        <div class="panel" id="panel-derecho">
-            <h4 style="color:#ffd700; margin-top:0;">[2] HARDWARE SPECS</h4>
-            {"".join([f"<div style='border-left:2px solid #ffd700; padding-left:10px; margin-bottom:10px;'><b>{k}</b><br><small>{v}</small></div>" for k,v in data["hw"].items()])}
+            <h4 style="color:#f0f; margin-top:0;">[1] STRATEGIC ANALYSIS</h4>
+            {"".join([f"<p><b>{k}:</b><br><small style='color:#ccc;'>{v}</small></p>" for k,v in data["strat"].items()])}
             
-            <h4 style="color:#f0f; margin-top:20px;">[3] SOFTWARE NODES (14)</h4>
-            <div style="max-height:200px; overflow-y:auto; background:rgba(0,0,0,0.5); padding:5px; margin-bottom:10px;">
+            <div style="margin-top:20px;">
+                <h4 style="color:#0ff;">CHAT DE MAIA</h4>
+                <div class="chat-box" id="chat">MAIA: Esperando comandos de Alex...<br>{f"USER: {chat_msg}<br>MAIA: Procesando ingeniería para {idea}" if chat_msg else ""}</div>
+                <input type="text" name="chat_msg" placeholder="Hablar con MAIA..." style="width:100%; margin-top:5px;">
+            </div>
+        </div>
+
+        <div class="panel" style="padding:0; position:relative;">
+            <div id="c3d" style="width:100%; height:100%;"></div>
+            <div style="position:absolute; bottom:10; left:10; color:#0f0; font-size:10px;">GPS: LOCK | AEAD: ON | V1200</div>
+        </div>
+
+        <div class="panel">
+            <h4 style="color:#ffd700; margin-top:0;">[2] HARDWARE ELITE</h4>
+            {"".join([f"<div style='margin-bottom:10px; border-left:2px solid #ffd700; padding-left:10px;'><small><b>{k}:</b> {v}</small></div>" for k,v in data["hw"].items()])}
+            
+            <h4 style="color:#f0f; margin-top:20px;">[3] PRODUCTION NODES (14)</h4>
+            <div style="max-height:180px; overflow-y:auto; border:1px solid #333; padding:5px; margin-bottom:10px;">
                 {"".join([f'''<form method="post" style="margin:0;">
                     <input type="hidden" name="drone_idea" value="{idea}">
                     <input type="hidden" name="action" value="generate">
                     <input type="hidden" name="target_node" value="{n}">
-                    <input type="hidden" name="scroll_pos" class="scroll-input">
-                    <button type="submit" class="node-btn {'active-node' if n == target else ''}">[SOURCE] {n}</button>
+                    <button type="submit" class="node-btn {'active' if n == target else ''}">[SRC] {n}</button>
                 </form>''' for n in sorted(data["sw"].keys())])}
             </div>
-            <div class="code-box">{current_code}</div>
+            <div class="code">{current_code}</div>
         </div>
     </div>
 
     <script>
-        const panelR = document.getElementById('panel-derecho');
-        window.onload = () => {{ panelR.scrollTop = {scroll_pos}; }};
-        document.querySelectorAll('form').forEach(f => {{
-            f.onsubmit = () => {{ if(f.querySelector('.scroll-input')) f.querySelector('.scroll-input').value = panelR.scrollTop; }};
-        }});
-
-        // MODELO 3D REALISTA (Cámara, Sensores, Luces)
-        const container = document.getElementById('proto-container');
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({{antialias:true, alpha:true}});
-        renderer.setSize(container.clientWidth, container.clientHeight);
-        container.appendChild(renderer.domElement);
-
-        const droneGroup = new THREE.Group();
-        if({ "true" if is_generated else "false" }) {{
-            // Cuerpo Hexagonal
-            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.8, 1, 0.5, 6), new THREE.MeshPhongMaterial({{color: 0x111111}}));
-            droneGroup.add(body);
-
-            // CÁMARA FRONTAL
-            const camBox = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.3), new THREE.MeshPhongMaterial({{color: 0x333333}}));
-            camBox.position.set(0, 0, 0.9);
-            const lens = new THREE.Mesh(new THREE.CircleGeometry(0.1, 16), new THREE.MeshBasicMaterial({{color: 0x00ffff}}));
-            lens.position.set(0, 0, 0.16);
-            camBox.add(lens);
-            droneGroup.add(camBox);
-
-            // SENSORES SUPERIORES (LiDAR)
-            const lidar = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.2, 16), new THREE.MeshPhongMaterial({{color: 0x222222}}));
-            lidar.position.y = 0.35;
-            droneGroup.add(lidar);
-
-            // LUCES DE NAVEGACIÓN
-            const lightL = new THREE.PointLight(0x00ff00, 1, 2); lightL.position.set(1.8, 0.2, 1.8); droneGroup.add(lightL);
-            const lightR = new THREE.PointLight(0xff0000, 1, 2); lightR.position.set(-1.8, 0.2, 1.8); droneGroup.add(lightR);
-
-            const armPos = [{{x:1.8, z:1.8}}, {{x:-1.8, z:1.8}}, {{x:1.8, z:-1.8}}, {{x:-1.8, z:-1.8}}];
-            armPos.forEach(p => {{
-                const arm = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.1, 0.1), new THREE.MeshPhongMaterial({{color: 0xffd700}}));
-                arm.position.set(p.x/2, 0, p.z/2); arm.rotation.y = -Math.atan2(p.z, p.x);
-                droneGroup.add(arm);
-                const prop = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.02, 0.2), new THREE.MeshBasicMaterial({{color: 0x00ffff, transparent:true, opacity:0.6}}));
-                prop.position.set(p.x, 0.2, p.z);
-                prop.name = "prop";
-                droneGroup.add(prop);
-            }});
+        function speak() {{
+            const m = new SpeechSynthesisUtterance("{f'Sistema de {idea} generado con éxito.' if is_gen else 'En espera de idea.'}");
+            m.lang = 'es-ES'; window.speechSynthesis.speak(m);
         }}
 
-        scene.add(droneGroup);
-        scene.add(new THREE.AmbientLight(0xffffff, 0.3));
-        const pLight = new THREE.PointLight(0x00ffff, 1, 20); pLight.position.set(5, 5, 5); scene.add(pLight);
-        camera.position.set(0, 5, 10); camera.lookAt(0,0,0);
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth*0.45/(window.innerHeight*0.8), 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({{antialias:true, alpha:true}});
+        renderer.setSize(window.innerWidth*0.45, window.innerHeight*0.8);
+        document.getElementById('c3d').appendChild(renderer.domElement);
 
-        function animate() {{
-            requestAnimationFrame(animate);
-            droneGroup.rotation.y += 0.005;
-            droneGroup.children.forEach(c => {{ if(c.name === "prop") c.rotation.y += 0.8; }});
+        const g = new THREE.Group();
+        if({ "true" if is_gen else "false" }) {{
+            const body = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.3, 1.2), new THREE.MeshPhongMaterial({{color:0x111111}}));
+            g.add(body);
+            // LUCES ESTROBOSCÓPICAS
+            const l1 = new THREE.PointLight(0xff0000, 2, 5); l1.position.set(0.6, 0.2, 0.6); g.add(l1);
+            const l2 = new THREE.PointLight(0x0000ff, 2, 5); l2.position.set(-0.6, 0.2, 0.6); g.add(l2);
+            // SENSORES Y LENTES
+            const s = new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), new THREE.MeshPhongMaterial({{color:0x333333}}));
+            s.position.set(0, -0.3, 0.5); g.add(s);
+            
+            [1,-1].forEach(x => [1,-1].forEach(z => {{
+                const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1), new THREE.MeshPhongMaterial({{color:0xffd700}}));
+                arm.rotation.z = Math.PI/2; arm.position.set(x*0.6, 0, z*0.6); g.add(arm);
+                const p = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.02, 0.1), new THREE.MeshBasicMaterial({{color:0x00ffff, transparent:true, opacity:0.5}}));
+                p.position.set(x*1.1, 0.1, z*1.1); p.name="p"; g.add(p);
+            }}));
+        }}
+        scene.add(g);
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+        const pl = new THREE.PointLight(0x00ffff, 1, 20); pl.position.set(5, 5, 5); scene.add(pl);
+        camera.position.set(0, 3, 7); camera.lookAt(0,0,0);
+
+        function anim() {{
+            requestAnimationFrame(anim);
+            g.rotation.y += 0.005;
+            g.children.forEach(c => {{ if(c.name==="p") c.rotation.y += 0.5; }});
             renderer.render(scene, camera);
         }}
-        animate();
+        anim();
     </script>
     </body></html>
     """
-    return render_template_string(h, scroll_pos=scroll_pos)
+    return render_template_string(h)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
