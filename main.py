@@ -1,193 +1,213 @@
 # -*- coding: utf-8 -*-
+from flask import Flask, render_template_string, request
 import os
-from flask import Flask, render_template_string, request, session
+
+try:
+    from software_engine import get_node_library
+    from hardware_engine import get_hardware_specs
+    from strategic_engine import get_strategic_analysis
+except:
+    # Mantener blindaje aunque no existan los archivos externos
+    def get_node_library(x): return {"SISTEMA_Vuelo": "// Kernel de Estabilidad Activo", "IA_Escaneo": "// Red Neuronal en espera"}
+    def get_hardware_specs(x): return {"CHASIS": "Fibra de Carbono Reforzada", "MOTORES": "Brushless 2400KV", "SENSORES": "LiDAR de barrido 360", "BATERÍA": "LiPo 6S 5000mAh"}
+    def get_strategic_analysis(x): return {"OBJETIVO": "Infiltración y Reconocimiento", "RIESGO": "Bajo (Blindaje v1000)"}
 
 app = Flask(__name__)
-app.secret_key = os.urandom(2048)
-
-# --- MÓDULOS BLINDADOS (SOFTWARE / HARDWARE / STRATEGY) ---
-class MaiaCore:
-    def get_strategic_status(self):
-        return {"status": "Escaneando Activos", "nivel": 1200, "blindaje": "Máximo"}
 
 @app.route('/', methods=['GET', 'POST'])
-def index():
-    if 'history' not in session: session['history'] = []
-    view = request.form.get('view_state', 'model_3d')
+def home():
+    idea = request.form.get('drone_idea', '')
+    target = request.form.get('target_node', '')
     
-    # Lógica de persistencia de módulos estratégicos
-    core = MaiaCore()
-    strategy = core.get_strategic_status()
+    db = get_node_library(idea)
+    hw_data = get_hardware_specs(idea)
+    strat_data = get_strategic_analysis(idea)
+    current_code = db.get(target, "// KERNEL MAIA II") if idea and target else "// AGUARDANDO COMANDO..."
 
-    html = """
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <title>MAIA II - DRONE INTERFACE</title>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-        <style>
-            :root { --cian: #00ffff; --gold: #ffd700; --bg: #050505; }
-            body { margin: 0; background: var(--bg); color: #fff; font-family: monospace; overflow: hidden; }
-            
-            /* UI Overlay */
-            #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-            .panel { position: absolute; padding: 20px; background: rgba(0,0,0,0.7); border: 1px solid #222; pointer-events: auto; }
-            .top-left { top: 20px; left: 20px; border-left: 4px solid var(--cian); }
-            .bottom-right { bottom: 20px; right: 20px; border-right: 4px solid var(--gold); text-align: right; }
-            
-            .nav-btn { background: none; border: 1px solid var(--cian); color: var(--cian); padding: 10px; cursor: pointer; margin-top: 10px; font-weight: bold; }
-            .nav-btn:hover { background: var(--cian); color: #000; }
+    h = f"""
+    <html><head><title>MAIA II - KERNEL INTEGRADO</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        body {{ background:#000; color:#0ff; font-family:monospace; margin:0; overflow:hidden; font-size:12px; }}
+        .header {{ display:flex; align-items:center; gap:10px; padding:10px; background:#001a1a; border-bottom:2px solid #0ff; }}
+        .btn-ui {{ background:none; border:1px solid #0ff; color:#0ff; padding:6px 12px; cursor:pointer; font-weight:bold; font-size:10px; }}
+        #voice-btn {{ background:#f00; color:#fff; border:none; }}
+        
+        .grid-master {{ display:grid; grid-template-columns: 25% 45% 30%; gap:10px; height:88vh; padding:10px; }}
+        .panel {{ border:1px solid #0ff2; background:rgba(0,12,12,0.9); padding:10px; overflow-y:auto; border-radius:4px; position:relative; }}
+        
+        .hw-header {{ display:flex; justify-content:space-between; align-items:center; cursor:pointer; color:#0ff; border-bottom:1px solid #0ff3; padding-bottom:5px; }}
+        .hw-item {{ border-left:2px solid #0f0; background:rgba(0,255,0,0.03); padding:8px; margin-bottom:5px; }}
+        #proto-container {{ width:100%; height:100%; position:relative; }}
+        .code-box {{ background:#000; color:#39ff14; padding:10px; font-size:10px; border-left:2px solid #f0f; white-space:pre-wrap; overflow-y:auto; height:150px; }}
+        
+        /* Overlay de Telemetría sobre el 3D */
+        .telemetry {{ position:absolute; top:10px; right:10px; font-size:9px; color:#ffd700; pointer-events:none; text-align:right; }}
+    </style>
+    </head><body>
+    
+    <div class='header'>
+        <b style="letter-spacing:2px;">MAIA II</b>
+        <form method='post' style="display:flex; flex-grow:1; gap:10px; margin:0;">
+            <input name='drone_idea' placeholder="Ingresa Comando de Diseño..." style="background:#000; color:#0ff; border:1px solid #0ff; padding:8px; flex-grow:1;" value='{idea}'>
+            <button type='submit' style="background:#0ff; color:#000; font-weight:bold; border:none; padding:0 20px; cursor:pointer;">DESPLEGAR SISTEMA</button>
+        </form>
+        <button class='btn-ui' onclick="window.location.href='/'">LIMPIAR</button>
+        <button class='btn-ui' id="voice-btn" onclick="maiaVoice()">VOZ MAIA II: OFF</button>
+    </div>
 
-            /* Contenedor 3D */
-            #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
-        </style>
-    </head>
-    <body>
-
-    <div id="ui-layer">
-        <div class="panel top-left">
-            <h2 style="color:var(--cian); margin:0;">MAIA II - CORE</h2>
-            <div style="font-size:10px; margin-top:5px;">SISTEMA: V.1200 / DRONE MODEL</div>
-            <div style="margin-top:15px;">
-                <b>ESTADO:</b> <span style="color:var(--gold);">""" + strategy['status'] + """</span><br>
-                <b>STRATEGY:</b> BLINDADO<br>
-                <b>HARDWARE:</b> ACTIVO
-            </div>
-            <form method="POST">
-                <button type="submit" name="view_state" value="scout" class="nav-btn">BARRIDO DE ACTIVOS</button>
-            </form>
+    <div class='grid-master'>
+        <div class="panel">
+            <h4 style="color:#f0f; border-bottom:1px solid #f0f3; padding-bottom:5px;">STRATEGIC ENGINE</h4>
+            {"".join([f"<div style='margin-bottom:15px;'><b style='color:#0ff; font-size:10px;'>[{k}]</b><p style='color:#ccc; margin:5px 0;'>{v}</p></div>" for k,v in strat_data.items()])}
+            <div style="margin-top:20px; border-top:1px solid #222; padding-top:10px; color:#555; font-size:9px;">BLINDAJE DE SEGURIDAD NIVEL 1100 ACTIVO</div>
         </div>
 
-        <div class="panel bottom-right">
-            <div style="color:var(--cian);">TELEMETRÍA 3D</div>
-            <div id="coords">X: 0.00 Y: 0.00 Z: 0.00</div>
-            <div style="margin-top:10px; font-size:9px; color:#555;">BRAZOS Y HÉLICES: SINCRONIZADOS</div>
+        <div class="panel" style="padding:0; overflow:hidden;">
+            <div id="proto-container">
+                <div class="telemetry" id="stat-3d">DRONE_STATUS: STANDBY</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="hw-header" onclick="toggleHW()">
+                <h4 style="margin:0;">HARDWARE SPECS</h4>
+                <span id="hw-arrow">▼</span>
+            </div>
+            <div id="hw-section" style="margin-top:10px;">
+                {"".join([f"<div class='hw-item'><b style='color:#ffd700; font-size:10px;'>{k}</b><div style='color:#ccc; font-size:9px;'>{v}</div></div>" for k,v in hw_data.items()])}
+            </div>
+            
+            <h4 style="color:#f0f; margin-top:20px; border-bottom:1px solid #f0f3; padding-bottom:5px;">SOFTWARE NODES</h4>
+            <div style="max-height:120px; overflow-y:auto; margin-bottom:10px; background:rgba(0,0,0,0.5);">
+                {"".join([f"<form method='post' style='margin:0; padding:2px;'><input type='hidden' name='drone_idea' value='{idea}'><input type='hidden' name='target_node' value='{n}'><button type='submit' style='background:none; color:#0f0; border:none; cursor:pointer; font-size:10px; text-align:left; width:100%;'> [▶] {n}</button></form>" for n in sorted(db.keys())])}
+            </div>
+            <div class="code-box" id="editor">{current_code}</div>
         </div>
     </div>
 
-    <div id="canvas-container"></div>
-
     <script>
-        let scene, camera, renderer, drone, props = [];
+        function toggleHW() {{
+            const sec = document.getElementById('hw-section');
+            const arr = document.getElementById('hw-arrow');
+            sec.style.display = (sec.style.display === 'none') ? 'block' : 'none';
+            arr.innerText = (sec.style.display === 'none') ? '▶' : '▼';
+        }}
 
-        function init() {
-            scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 8;
-            camera.position.y = 3;
+        function maiaVoice() {{
+            const btn = document.getElementById('voice-btn');
+            btn.style.background = "#0f0"; btn.style.color = "#000"; btn.innerText = "VOZ MAIA II: ON";
+            const msg = new SpeechSynthesisUtterance("Alex, sistema MAIA II reconfigurado. Dron industrial listo para inspección de activos.");
+            msg.lang = 'es-ES'; window.speechSynthesis.speak(msg);
+        }}
 
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.getElementById('canvas-container').appendChild(renderer.domElement);
+        // --- MOTOR 3D MAIA II (DRON COMPLETO) ---
+        const container = document.getElementById('proto-container');
+        if (container) {{
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(45, container.clientWidth/container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({{antialias:true, alpha:true}});
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
 
-            // Luces
-            const light = new THREE.PointLight(0x00ffff, 1, 100);
-            light.position.set(10, 10, 10);
-            scene.add(light);
-            scene.add(new THREE.AmbientLight(0x404040, 2));
+            const droneGroup = new THREE.Group();
+            const props = [];
 
-            // --- CONSTRUCCIÓN DEL DRON MAIA II ---
-            drone = new THREE.Group();
+            // 1. Cuerpo del Dron (Hexagonal con color vivo)
+            const body = new THREE.Mesh(
+                new THREE.CylinderGeometry(0.8, 1, 0.4, 6),
+                new THREE.MeshPhongMaterial({{color: 0x111111, specular: 0x00ffff, shininess: 100}})
+            );
+            droneGroup.add(body);
 
-            // 1. Cuerpo Central (Hexágono)
-            const bodyGeo = new THREE.CylinderGeometry(1.2, 1.5, 0.6, 6);
-            const bodyMat = new THREE.MeshPhongMaterial({ color: 0x111111, specular: 0x00ffff, shininess: 100 });
-            const body = new THREE.Mesh(bodyGeo, bodyMat);
-            drone.add(body);
-
-            // Detalle de color vivo en el centro
-            const coreGeo = new THREE.SphereGeometry(0.4, 32, 32);
-            const coreMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-            const core = new THREE.Mesh(coreGeo, coreMat);
-            core.position.y = 0.4;
-            drone.add(core);
+            // Núcleo central brillante
+            const core = new THREE.Mesh(
+                new THREE.SphereGeometry(0.25, 16, 16),
+                new THREE.MeshBasicMaterial({{color: 0x00ffff}})
+            );
+            core.position.y = 0.3;
+            droneGroup.add(core);
 
             // 2. Brazos y Hélices (X4)
-            const armColor = 0xffd700; // Oro
-            const propColor = 0x00ffff; // Cian
-            const positions = [
-                { x: 2, z: 2 }, { x: -2, z: 2 },
-                { x: 2, z: -2 }, { x: -2, z: -2 }
+            const armPositions = [
+                {{x:1.5, z:1.5}}, {{x:-1.5, z:1.5}},
+                {{x:1.5, z:-1.5}}, {{x:-1.5, z:-1.5}}
             ];
 
-            positions.forEach((pos, index) => {
-                // Brazo
-                const armGeo = new THREE.BoxGeometry(2.5, 0.2, 0.2);
-                const armMat = new THREE.MeshPhongMaterial({ color: armColor });
-                const arm = new THREE.Mesh(armGeo, armMat);
-                
-                // Rotar brazo hacia la esquina
+            armPositions.forEach(pos => {{
+                // Brazo (Color Oro Vivo)
+                const armGroup = new THREE.Group();
+                const arm = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.8, 0.15, 0.15),
+                    new THREE.MeshPhongMaterial({{color: 0xffd700}})
+                );
                 const angle = Math.atan2(pos.z, pos.x);
                 arm.rotation.y = -angle;
-                arm.position.set(pos.x / 2, 0, pos.z / 2);
-                drone.add(arm);
+                arm.position.set(pos.x/2, 0, pos.z/2);
+                armGroup.add(arm);
 
-                // Motor (al final del brazo)
-                const motorGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.4, 16);
-                const motorMat = new THREE.MeshPhongMaterial({ color: 0x333333 });
-                const motor = new THREE.Mesh(motorGeo, motorMat);
-                motor.position.set(pos.x, 0.2, pos.z);
-                drone.add(motor);
+                // Motor
+                const motor = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.2, 0.2, 0.3, 12),
+                    new THREE.MeshPhongMaterial({{color: 0x333333}})
+                );
+                motor.position.set(pos.x, 0.1, pos.z);
+                armGroup.add(motor);
 
-                // Hélice
-                const propGroup = new THREE.Group();
-                const bladeGeo = new THREE.BoxGeometry(1.8, 0.05, 0.2);
-                const bladeMat = new THREE.MeshBasicMaterial({ color: propColor, transparent: true, opacity: 0.8 });
-                const blade1 = new THREE.Mesh(bladeGeo, bladeMat);
-                const blade2 = blade1.clone();
-                blade2.rotation.y = Math.PI / 2;
+                // Hélice (Cian Neón)
+                const prop = new THREE.Group();
+                const blade = new THREE.Mesh(
+                    new THREE.BoxGeometry(1.4, 0.02, 0.15),
+                    new THREE.MeshBasicMaterial({{color: 0x00ffff, transparent: true, opacity: 0.8}})
+                );
+                const blade2 = blade.clone(); blade2.rotation.y = Math.PI/2;
+                prop.add(blade, blade2);
+                prop.position.set(pos.x, 0.3, pos.z);
                 
-                propGroup.add(blade1);
-                propGroup.add(blade2);
-                propGroup.position.set(pos.x, 0.5, pos.z);
+                armGroup.add(prop);
+                props.push(prop);
+                droneGroup.add(armGroup);
+            }});
+
+            scene.add(droneGroup);
+
+            // Iluminación
+            const pLight = new THREE.PointLight(0x00ffff, 1.5, 50);
+            pLight.position.set(5, 5, 5);
+            scene.add(pLight);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+
+            camera.position.set(0, 4, 8);
+            camera.lookAt(0,0,0);
+
+            function animate() {{
+                requestAnimationFrame(animate);
                 
-                drone.add(propGroup);
-                props.push(propGroup); // Guardar para animar
-            });
+                // Levitación y rotación suave
+                droneGroup.position.y = Math.sin(Date.now() * 0.002) * 0.2;
+                droneGroup.rotation.y += 0.005;
+                
+                // Hélices a alta velocidad
+                props.forEach(p => p.rotation.y += 0.5);
 
-            scene.add(drone);
-
-            // Grid de fondo
-            const grid = new THREE.GridHelper(20, 20, 0x00ffff, 0x111111);
-            grid.position.y = -2;
-            scene.add(grid);
-
+                renderer.render(scene, camera);
+                
+                // Actualizar Telemetría en pantalla
+                document.getElementById('stat-3d').innerText = 
+                    "ALTITUD_ESTABLE: OK\\nPROPULSIÓN: " + (Math.random()*100).toFixed(0) + "%\\nRADAR: ACTIVO";
+            }}
             animate();
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Movimiento suave del dron (levitación)
-            drone.position.y = Math.sin(Date.now() * 0.002) * 0.2;
-            drone.rotation.y += 0.005; // Rotación lenta del modelo completo
-            drone.rotation.x = Math.sin(Date.now() * 0.001) * 0.05;
-
-            // Rotación de hélices (Velocidad alta)
-            props.forEach(p => {
-                p.rotation.y += 0.4;
-            });
-
-            // Actualizar Telemetría
-            document.getElementById('coords').innerText = 
-                `X: ${drone.position.x.toFixed(2)} Y: ${drone.position.y.toFixed(2)} Z: ${drone.rotation.y.toFixed(2)}`;
-
-            renderer.render(scene, camera);
-        }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-        init();
+            
+            window.addEventListener('resize', () => {{
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            }});
+        }}
     </script>
-    </body>
-    </html>
+    </body></html>
     """
-    return render_template_string(html)
+    return render_template_string(h)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
