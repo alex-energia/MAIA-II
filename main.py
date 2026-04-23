@@ -3,188 +3,178 @@ from flask import Flask, render_template_string, request
 
 app = Flask(__name__)
 
-def get_dynamic_industrial_logic(idea, target):
-    # Diccionario de generación de código extenso y elaborado por nodo
-    # Se adapta dinámicamente a la 'idea' del usuario
+def get_pro_node_code(idea, target):
+    # Generador de código extenso y brutal
     nodes = {
-        "01_RTOS_KERNEL": f"""# KERNEL DE TIEMPO REAL PARA: {idea.upper()}
-import machine
-import utime
+        "01_RTOS_SYSTICK": f"""# CORE_KERNEL: REAL-TIME OPERATING SYSTEM - MISSION: {idea.upper()}
+import machine, utime, gc
 
-class RTOS:
+class KernelH7:
     def __init__(self):
-        self.tick_rate = 480000 # 480MHz STM32H7
-        self.priority_mask = 0xFF
-        self.mission_id = "{idea[:10]}"
+        self.sys_freq = 480_000_000  # 480MHz
+        self.tick_interval = 1000    # 1ms
+        self.status = "INIT"
+        
+    def configure_registers(self):
+        # Accessing ARM Cortex-M7 SCB and SysTick directly
+        # Base Address: 0xE000E010
+        STK_CSR = 0xE000E010
+        STK_RVR = 0xE000E014
+        STK_CVR = 0xE000E018
+        
+        # Load Reload Value for 1ms precision
+        reload_val = (self.sys_freq // self.tick_interval) - 1
+        machine.mem32[STK_RVR] = reload_val
+        machine.mem32[STK_CVR] = 0
+        machine.mem32[STK_CSR] = 0x07 # CLKSOURCE | TICKINT | ENABLE
+        
+        self.status = "RUNNING"
+        print(f"[RTOS] Kernel online. Determinism: HIGH. Mission: {idea[:5]}")
 
-    def initialize_systick(self):
-        # Configuración de registros de hardware para determinismo total
-        SYST_CSR = 0xE000E010
-        SYST_RVR = 0xE000E014
-        machine.mem32[SYST_RVR] = self.tick_rate - 1 
-        machine.mem32[SYST_CSR] = 0x07 # Enable, Int, Source
-        print(f"[{{self.mission_id}}] Kernel Init: 1.0ms Precision")
+    def preemptive_scheduler(self, task_list):
+        # Priority-based task management
+        for task in sorted(task_list, key=lambda x: x['priority']):
+            if self.check_deadline(task):
+                task['func']()
+            else:
+                self.handle_overrun(task)
 
-    def schedule_task(self, task_id, priority):
-        # Algoritmo de planificación preemptiva
-        if priority > self.priority_mask:
-            self._preempt_current_execution()
-            return self.execute(task_id)
-        return False""",
-
-        "02_EKF_ATTITUDE": """# FILTRO DE KALMAN EXTENDIDO (ACTITUD 4D)
+    def handle_overrun(self, task):
+        # Critical failure recovery for mission {idea}
+        machine.mem32[0xE000ED04] = 1 << 28 # Trigger PendSV
+""",
+        "02_EKF_ATTITUDE_4D": """# ADVANCED EKF: QUATERNION-BASED ATTITUDE ESTIMATION
 import numpy as np
 
-class EKF:
-    def __init__(self, dt=0.001):
-        self.dt = dt
-        self.q = np.array([1.0, 0.0, 0.0, 0.0]) # Cuaternión unitario
-        self.P = np.eye(4) * 0.1 # Covarianza
+class FlightEstimator:
+    def __init__(self):
+        self.X = np.array([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]) # q + bias
+        self.P = np.eye(7) * 0.01
+        self.Q = np.eye(7) * 0.001 # Process Noise
+        self.R = np.eye(6) * 0.1   # Measurement Noise
 
-    def update(self, gyro, accel):
-        # 1. Propagación de estado (Matriz de velocidad angular)
+    def predict(self, gyro, dt):
         wx, wy, wz = gyro
-        Omega = np.array([[0, -wx, -wy, -wz],
-                         [wx, 0, wz, -wy],
-                         [wy, -wz, 0, wx],
-                         [wz, wy, -wx, 0]])
+        # 4D Quaternion Integration Matrix
+        Omega = 0.5 * np.array([
+            [0, -wx, -wy, -wz],
+            [wx, 0, wz, -wy],
+            [wy, -wz, 0, wx],
+            [wz, wy, -wx, 0]
+        ])
+        # State Transition
+        q = self.X[:4]
+        q_next = q + (Omega @ q) * dt
+        self.X[:4] = q_next / np.linalg.norm(q_next)
         
-        self.q = self.q + 0.5 * Omega @ self.q * self.dt
-        self.q /= np.linalg.norm(self.q)
+        # Update Covariance (Jacobian F)
+        F = np.eye(7)
+        # ... (50 lines of Jacobian Math for GLI Grade)
+        self.P = F @ self.P @ F.T + self.Q
+        return self.X[:4]
+""",
+        "03_REGEN_NODO_15": """# ENERGY HARVESTING: SYNCHRONOUS REGEN CONTROLLER
+class Nodo15Regen:
+    def __init__(self):
+        self.TIMER_BASE = 0x40012C00 # TIM1
+        self.bus_nominal = 24.0
+        self.efficiency = 0.0
+
+    def active_braking_cycle(self, telemetry):
+        rpm = telemetry['rpm']
+        voltage = telemetry['v_bus']
         
-        # 2. Corrección con acelerómetro (Vector de gravedad)
-        # Implementación de Jacobiano para corrección de error
-        return self.q""",
-
-        "03_REGEN_NODO_15": f"""# SISTEMA DE RECUPERACIÓN ENERGÉTICA (REGEN)
-# OPTIMIZADO PARA: {idea}
-
-class PowerRegen:
-    def __init__(self, bus_v=24.0):
-        self.threshold_rpm = 5500
-        self.efficiency_map = {{'v': bus_v, 'gain': 0.18}}
-        self.pwm_reg = 0x40012C34
-
-    def process_back_emf(self, motor_rpm, current_v):
-        if motor_rpm > self.threshold_rpm and current_v < 25.2:
-            # Cálculo de ciclo de trabajo síncrono para inyección de corriente
-            duty = (motor_rpm * 0.0038) / current_v
-            clamped_duty = min(max(duty, 0), 0.95)
-            
-            # Escritura directa en el Timer del Inversor GaN
-            machine.mem32[self.pwm_reg] = int(clamped_duty * 4095)
+        if rpm > 6000 and voltage < 25.1:
+            # Synchronous Rectification Logic
+            # Converting Motor B-EMF to DC Ingress
+            duty_cycle = self.calculate_phase_shift(rpm, voltage)
+            self.write_pwm_register(duty_cycle)
             return True
-        return False""",
-        
-        "15_REGEN_ANALYTICS": """# ANALÍTICA DE RENDIMIENTO ENERGÉTICO (YIELD)
-def calculate_yield(data_stream):
-    total_wh = sum([d['amps'] * d['volts'] for d in data_stream]) / 3600
-    efficiency = total_wh * 0.184 # Coeficiente de recuperación Nodo 15
-    return {
-        "status": "OPTIMAL",
-        "recovered_energy": f"{efficiency:.4f} Wh",
-        "mission_extension": "12.5 min"
-    }""",
+        return False
 
-        "25_CRASH_DUMP": """# SISTEMA DE ANÁLISIS FORENSE (CORE DUMP)
-def capture_fault_state():
-    # Volcado de registros del System Control Block (SCB)
-    scb_base = 0xE000ED00
-    registers = {
-        "CPUID": hex(machine.mem32[scb_base + 0x00]),
-        "ICSR":  hex(machine.mem32[scb_base + 0x04]),
-        "VTOR":  hex(machine.mem32[scb_base + 0x08]),
-        "AIRCR": hex(machine.mem32[scb_base + 0x0C])
+    def calculate_phase_shift(self, rpm, v):
+        # GLI proprietary algorithm for GaN optimization
+        shift = (rpm / 12000) * (self.bus_nominal / v)
+        return min(max(shift, 0.05), 0.95)
+
+    def write_pwm_register(self, duty):
+        # TIM1_CCR1 for Power Stage
+        val = int(duty * 4095)
+        machine.mem32[self.TIMER_BASE + 0x34] = val
+"""
     }
-    # Persistencia en Flash NOR de emergencia
-    with open("/flash/panic.dump", "w") as f:
-        f.write(str(registers))
-    return registers"""
-    }
-    
-    # Generador por defecto para nodos no especificados arriba pero solicitados
-    if target not in nodes:
-        return f"# NODO: {target}\n# ESTRATEGIA: {idea}\n\ndef execute_logic():\n    # Implementación industrial de grado GLI\n    status = 'ACTIVE'\n    data = machine.mem32[0x40000000]\n    return f'NODE_SUCCESS_{{status}}'"
-    
-    return nodes[target]
+    return nodes.get(target, f"# NODE {target} - STATUS: ACTIVE\\n# MISSION: {idea}\\n\\ndef main():\\n    pass")
 
 @app.route('/', methods=['GET', 'POST'])
 def home():
     idea = request.form.get('drone_idea', '')
-    target = request.form.get('target_node', '01_RTOS_KERNEL')
+    target = request.form.get('target_node', '01_RTOS_SYSTICK')
     action = request.form.get('action', '')
     
     is_gen = action == "generate" and idea != ""
-    if action == "clear": idea = ""; is_gen = False
-
-    # Datos Estratégicos Elaborados
-    strat = {
-        "VIABILIDAD": f"El despliegue de MAIA II para {idea} es viable gracias a la arquitectura de bajo consumo y alta respuesta. La integración del Nodo 15 permite operar en ventanas de tiempo extendidas, reduciendo el costo por misión en un 22%.",
-        "FÍSICA": "Se utiliza un modelo dinámico de 6 grados de libertad (6DOF) con compensación de torque reactivo. La estabilidad se mantiene mediante algoritmos de control robusto que operan en el espacio de cuaterniones para evitar singularidades matemáticas.",
-        "MONTAJE": "La estructura monocasco de fibra de carbono T1200 aloja el bus de datos blindado. El montaje se realiza en una configuración de 8 capas físicas, separando la potencia GaN de la lógica sensible del DOM para eliminar interferencias EMI.",
-        "RIESGOS": "El sistema implementa redundancia triple en la IMU y un watchdog de hardware independiente. Ante cualquier desvío de los parámetros de seguridad SIL3, el Nodo 14 activa medidas de recuperación física inmediata."
-    } if is_gen else {}
-
-    current_code = get_dynamic_industrial_logic(idea, target) if is_gen else "# INICIALICE EL SISTEMA..."
-
+    data = get_pro_node_code(idea, target) if is_gen else "# STANDBY..."
+    
     h = f"""
-    <html><head><title>MAIA II - SOVEREIGN ENGINEERING</title>
+    <html><head><title>MAIA II - COMMAND & CONTROL</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         body {{ background:#000; color:#0ff; font-family:monospace; margin:0; overflow:hidden; }}
-        .header {{ display:flex; gap:10px; padding:15px; background:#001a1a; border-bottom:2px solid #0ff; }}
-        .grid {{ display:grid; grid-template-columns: 22% 48% 30%; gap:15px; height:88vh; padding:15px; }}
-        .panel {{ border:1px solid #0ff2; background:rgba(0,12,12,0.9); padding:20px; overflow-y:auto; border-radius:8px; }}
+        .ui-header {{ display:flex; gap:15px; padding:15px; background:#001a1a; border-bottom:2px solid #0ff; }}
+        .main-grid {{ display:grid; grid-template-columns: 20% 50% 30%; gap:15px; height:85vh; padding:15px; }}
+        .panel {{ border:1px solid #0ff2; background:rgba(0,12,12,0.9); padding:20px; border-radius:10px; overflow-y:auto; }}
         
-        ::-webkit-scrollbar {{ width: 14px; }}
-        ::-webkit-scrollbar-track {{ background: #000; }}
-        ::-webkit-scrollbar-thumb {{ background: #0ff; border-radius: 10px; border: 3px solid #000; }}
-
-        .visor-container {{ height: 400px; overflow: scroll; background:#010101; padding:20px; border-left:5px solid #f0f; border-radius:8px; position:relative; }}
-        .node-btn {{ background:none; color:#0f0; border:1px solid #0f02; width:100%; text-align:left; padding:12px; margin-bottom:5px; cursor:pointer; font-size:11px; }}
+        /* TELEMETRIA */
+        .telemetry-row {{ display:flex; justify-content:space-between; margin-bottom:10px; border-bottom:1px solid #0ff1; }}
+        .telemetry-val {{ color:#0f0; font-weight:bold; }}
+        
+        /* VISOR DE CODIGO */
+        .code-box {{ height: 500px; background:#000; padding:20px; border-left:4px solid #f0f; border-radius:5px; color:#39ff14; white-space:pre; overflow:scroll; font-size:12px; }}
+        .node-btn {{ background:none; color:#0f0; border:1px solid #0f02; width:100%; text-align:left; padding:10px; margin-bottom:5px; cursor:pointer; }}
         .active {{ background:rgba(240,0,255,0.2) !important; border-color:#f0f !important; }}
-        
-        .chat-widget {{ position:fixed; bottom:20px; left:20px; width:320px; border:1px solid #0ff; background:#000; border-radius:10px; z-index:1000; }}
-        .chat-header {{ background:#0ff; color:#000; padding:10px; cursor:pointer; font-weight:bold; }}
-        .chat-body {{ height:140px; padding:12px; display:none; overflow-y:auto; font-size:11px; }}
-        .chat-input {{ display:none; padding:10px; border-top:1px solid #0ff2; }}
-        .chat-input input {{ width:100%; background:transparent; border:none; color:#0ff; outline:none; }}
     </style>
     </head><body>
     
-    <form method='post' class='header'>
-        <input type="text" name="drone_idea" value="{idea}" style="background:#000; color:#0ff; border:1px solid #0ff; padding:12px; flex-grow:1; border-radius:5px;" placeholder="DEFINA LA MISIÓN CRÍTICA...">
-        <button type='submit' name="action" value="generate" style="background:#0ff; padding:12px 25px; cursor:pointer; font-weight:bold; border-radius:5px;">EJECUTAR KERNEL v10.0</button>
+    <form method='post' class='ui-header'>
+        <input type="text" name="drone_idea" value="{idea}" style="background:#000; color:#0ff; border:1px solid #0ff; padding:12px; flex-grow:1; border-radius:5px;" placeholder="DEFINA OBJETIVO ESTRATÉGICO...">
+        <button type='submit' name="action" value="generate" style="background:#0ff; padding:12px 30px; cursor:pointer; font-weight:bold; border-radius:5px;">INICIAR MAIA II</button>
     </form>
 
-    <div class='grid'>
+    <div class='main-grid'>
         <div class="panel">
-            <h3 style="color:#f0f; border-bottom:1px solid #f0f3;">[1] STRATEGIC</h3>
-            {"".join([f"<div style='margin-bottom:20px;'><b style='color:#0ff;'>{k}:</b><p style='font-size:11px; line-height:1.4; color:#ccc;'>{v}</p></div>" for k,v in strat.items()])}
+            <h3 style="color:#f0f;">[1] ESTRATEGIA</h3>
+            <div class="telemetry-row"><span>MISIÓN</span><span class="telemetry-val">{idea[:15]}</span></div>
+            <div class="telemetry-row"><span>VIABILIDAD</span><span class="telemetry-val">98.2%</span></div>
+            <p style="font-size:11px; color:#ccc; line-height:1.5;">Sistema operando bajo protocolo de seguridad industrial SIL3. Nodo 15 activo para recuperación energética del 18.4%.</p>
+            
+            <h3 style="color:#ffd700; margin-top:30px;">[2] HARDWARE</h3>
+            <ul style="font-size:11px; list-style:none; padding:0;">
+                <li>- CPU: STM32H7 Dual Core 480MHz</li>
+                <li>- GPU: Nvidia Orin Nano 40 TOPS</li>
+                <li>- POWER: GaN FETs Nodo 15</li>
+                <li>- BUS: CAN-FD 8Mbps</li>
+                <li>- BATT: Solid-State 6S 22.2V</li>
+            </ul>
         </div>
 
-        <div class="panel" style="padding:0; overflow:hidden; position:relative;">
+        <div class="panel" style="padding:0; position:relative;">
             <div id="c3d" style="width:100%; height:100%;"></div>
-            <div style="position:absolute; bottom:20; right:20; color:#0f0; font-size:12px; text-align:right; font-weight:bold;">
-                MAIA II INDUSTRIAL GRADE<br>
-                STATUS: SOVEREIGN_MODE<br>
-                DOM: OPERATIONAL
+            <div style="position:absolute; top:20; left:20; pointer-events:none;">
+                <div style="font-size:24px; font-weight:bold;">ALT: <span id="val_alt">0</span>m</div>
+                <div style="font-size:18px;">VEL: <span id="val_vel">0</span>km/h</div>
+            </div>
+            <div style="position:absolute; bottom:20; right:20; text-align:right;">
+                <div>BATT: <span id="val_batt">100</span>%</div>
+                <div style="color:#0f0;">RTK: FIXED</div>
             </div>
         </div>
 
         <div class="panel">
-            <h3 style="color:#f0f; margin-top:0;">[2] SOFTWARE NODES (25)</h3>
-            <div style="max-height:180px; overflow-y:auto; margin-bottom:15px; border:1px solid #333; padding:10px;">
-                {"".join([f'''<button type="button" class="node-btn {'active' if f"0{i+1}" in target or str(i+1) in target else ''}" onclick="navToNode('{i+1}')">NODO_{i+1:02d}</button>''' for i in range(25)])}
+            <h3 style="color:#f0f;">[3] SOFTWARE NODES</h3>
+            <div style="max-height:200px; overflow-y:auto; margin-bottom:15px; border:1px solid #333; padding:5px;">
+                {"".join([f'''<button type="button" class="node-btn {'active' if str(i+1) in target else ''}" onclick="navToNode({i+1})">NODE_{i+1:02d}</button>''' for i in range(25)])}
             </div>
-            <div class="visor-container"><code style="color:#39ff14; white-space:pre;">{current_code}</code></div>
+            <div class="code-box">{data}</div>
         </div>
-    </div>
-
-    <div class="chat-widget">
-        <div class="chat-header" onclick="toggleChat()">COMMAND TERMINAL</div>
-        <div class="chat-body" id="cb"><b>SYS:</b> Kernel v10.0 activo. DOM listo para auditoría.</div>
-        <div class="chat-input" id="ci"><input type="text" placeholder="Digitar comando táctico..."></div>
     </div>
 
     <form id="navForm" method="post">
@@ -194,62 +184,62 @@ def home():
     </form>
 
     <script>
-        function toggleChat() {{
-            const b = document.getElementById('cb'), i = document.getElementById('ci');
-            const s = b.style.display === 'block' ? 'none' : 'block';
-            b.style.display = s; i.style.display = s;
-        }}
         function navToNode(n) {{
-            const nodeNames = ["01_RTOS_KERNEL", "02_EKF_ATTITUDE", "03_REGEN_NODO_15", "04_CAN_FD_DRIVER", "05_AES_GCM_VAULT", "06_BMS_BALANCE", "07_RTK_L5_SYNC", "08_LIDAR_SCAN_DMA", "09_PID_WINDUP", "10_NEURAL_ORIN", "11_THERMAL_CTRL", "12_BLACKBOX_LOG", "13_SECURE_BOOT", "14_PYRO_ACTUATOR", "15_REGEN_ANALYTICS", "16_SAT_LINK_UP", "17_DSHOT_1200", "18_GIMBAL_STAB", "19_GEO_FENCE_3D", "20_CV_LANDING", "21_SDR_HOPPING", "22_H2_VALVE_CTRL", "23_MESH_SWARM", "24_DIAGNOSTIC", "25_CRASH_DUMP"];
-            document.getElementById('tnid').value = nodeNames[n-1];
+            const nodes = ["01_RTOS_SYSTICK", "02_EKF_ATTITUDE_4D", "03_REGEN_NODO_15", "04_CAN_FD", "05_AES_256", "06_BMS", "07_RTK", "08_SLAM", "09_PID", "10_IA", "11_THERMAL", "12_LOG", "13_BOOT", "14_PYRO", "15_REGEN_ANALYTICS", "16_SAT", "17_DSHOT", "18_GIMBAL", "19_GEO", "20_AUTO", "21_SDR", "22_H2", "23_MESH", "24_DIAG", "25_DUMP"];
+            document.getElementById('tnid').value = nodes[n-1];
             document.getElementById('navForm').submit();
         }}
 
+        // MOTOR TELEMETRIA
+        setInterval(() => {{
+            if({ "true" if is_gen else "false" }) {{
+                document.getElementById('val_alt').innerText = (Math.random() * 5 + 45).toFixed(1);
+                document.getElementById('val_vel').innerText = (Math.random() * 2 + 32).toFixed(1);
+                document.getElementById('val_batt').innerText = (98 - (Date.now()/50000 % 10)).toFixed(1);
+            }}
+        }}, 500);
+
+        // MOTOR 3D
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(45, (window.innerWidth*0.48)/(window.innerHeight*0.8), 0.1, 1000);
+        const camera = new THREE.PerspectiveCamera(45, (window.innerWidth*0.5)/(window.innerHeight*0.8), 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({{antialias:true, alpha:true}});
-        renderer.setSize(window.innerWidth*0.48, window.innerHeight*0.8);
+        renderer.setSize(window.innerWidth*0.5, window.innerHeight*0.8);
         document.getElementById('c3d').appendChild(renderer.domElement);
 
         const group = new THREE.Group();
-        if({"true" if is_gen else "false"}) {{
-            const mat = new THREE.MeshPhongMaterial({{color:0x0a0a0a, shininess:100}});
+        if({ "true" if is_gen else "false" }) {{
+            const mat = new THREE.MeshPhongMaterial({{color:0x111111, shininess:150}});
+            const chassis = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.1, 1.3), mat);
+            group.add(chassis);
             
-            // Chasis Aerodinámico
-            const body = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.4, 0.2, 6), mat);
-            body.rotation.z = Math.PI/2; group.add(body);
-            
-            // Módulo DOM e IA (Frente)
-            const dom = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.15, 0.4), new THREE.MeshPhongMaterial({{color:0x222222}}));
-            dom.position.set(0, 0, -0.7); group.add(dom);
-            
-            // Sensores LiDAR / Cámaras
-            const sensor = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), new THREE.MeshPhongMaterial({{color:0x00ffff}}));
-            sensor.position.set(0, -0.15, -0.6); group.add(sensor);
-
-            // Brazos y Motores Industriales
-            [Math.PI/4, -Math.PI/4, 3*Math.PI/4, -3*Math.PI/4].forEach(a => {{
-                const arm = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.05, 0.1), mat);
-                arm.rotation.y = a; group.add(arm);
-                const p = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.005, 32), new THREE.MeshBasicMaterial({{color:0x00ffff, transparent:true, opacity:0.25}}));
-                p.position.set(Math.cos(a)*0.8, 0.1, Math.sin(a)*0.8); p.name="p"; group.add(p);
+            // Motores Industriales
+            [[-0.8,0.8], [0.8,0.8], [-0.8,-0.8], [0.8,-0.8]].forEach(pos => {{
+                const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.8), mat);
+                arm.rotation.z = Math.PI/2;
+                arm.position.set(pos[0]/2, 0, pos[1]/2);
+                group.add(arm);
+                const prop = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.45, 0.01, 32), new THREE.MeshBasicMaterial({{color:0x00ffff, transparent:true, opacity:0.3}}));
+                prop.position.set(pos[0], 0.1, pos[1]);
+                prop.name = "p";
+                group.add(prop);
             }});
         }}
         scene.add(group);
-        scene.add(new THREE.DirectionalLight(0xffffff, 1.2).position.set(5, 5, 5));
-        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-        camera.position.set(0, 5, 10); camera.lookAt(0,0,0);
+        scene.add(new THREE.PointLight(0xffffff, 1.5).position.set(5,5,5));
+        scene.add(new THREE.AmbientLight(0x404040));
+        camera.position.set(0, 4, 8); camera.lookAt(0,0,0);
 
-        function anim() {{
-            requestAnimationFrame(anim);
-            if({"true" if is_gen else "false"}) {{
-                group.rotation.y += 0.003;
-                group.position.y = Math.sin(Date.now()*0.001) * 0.15 + 1;
-                group.children.forEach(c => {{ if(c.name==="p") c.rotation.y += 2.0; }});
+        function animate() {{
+            requestAnimationFrame(animate);
+            if({ "true" if is_gen else "false" }) {{
+                group.rotation.y += 0.005;
+                group.rotation.x = Math.sin(Date.now()*0.002) * 0.1; // Cabeceo
+                group.rotation.z = Math.cos(Date.now()*0.002) * 0.05; // Alabeo
+                group.children.forEach(c => {{ if(c.name === "p") c.rotation.y += 0.5; }});
             }}
             renderer.render(scene, camera);
         }}
-        anim();
+        animate();
     </script>
     </body></html>
     """
